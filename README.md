@@ -2,7 +2,7 @@
 
 A modern, lightweight meeting scheduling app built with React and Vite. PURE VIBES!
 
-Visit -> [Tiny Time](https://tinytime.yingcredible.net)
+Visit -> [Tiny Time](https://tinytime.engsight.app)
 
 ## Getting Started
 
