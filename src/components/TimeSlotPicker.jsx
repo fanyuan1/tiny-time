@@ -174,7 +174,7 @@ export const TimeSlotPicker = ({
                                             isPastDate
                                                 ? "text-muted-foreground/30 cursor-not-allowed"
                                                 : isSelectedDate
-                                                    ? "bg-primary text-primary-foreground font-bold shadow-sm"
+                                                    ? "bg-primary text-primary-foreground font-bold shadow-xs"
                                                     : isToday
                                                         ? "bg-primary/10 text-primary font-semibold border border-primary"
                                                         : "hover:bg-accent text-foreground"
@@ -214,7 +214,7 @@ export const TimeSlotPicker = ({
                                         "w-full py-3 px-4 rounded-lg border text-left transition-all flex items-center justify-between",
                                         selected
                                             ? "bg-primary text-primary-foreground border-primary shadow-md transform scale-[1.02]"
-                                            : "bg-background border-border hover:border-primary hover:shadow-sm hover:scale-[1.01]"
+                                            : "bg-background border-border hover:border-primary hover:shadow-xs hover:scale-[1.01]"
                                     )}
                                 >
                                     <span className="font-medium">{format(time, "h:mm a")}</span>
