@@ -111,7 +111,7 @@ export default function Confirmation({ eventData }) {
     };
 
     return (
-        <div className="min-h-screen w-full flex flex-col items-center justify-center">
+        <div className="min-h-dvh w-full flex flex-col items-center justify-center">
             <Card className="w-full max-w-3xl mx-auto text-center">
                 <CardHeader>
                     <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
