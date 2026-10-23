@@ -32,9 +32,9 @@ jobs:
         run: echo "RESEND_KEY=${{ secrets.VITE_RESEND_API_KEY }}" > functions/.env
 
       - name: Write service account key
-        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_ENGSIGHTLABS }}' > "$RUNNER_TEMP/firebase-sa.json"
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_TINY_TIME_9000 }}' > "$RUNNER_TEMP/firebase-sa.json"
 
       - name: Deploy functions
-        run: npx --yes firebase-tools@latest deploy --only functions --project engsightlabs --non-interactive --force
+        run: npx --yes firebase-tools@latest deploy --only functions --project tiny-time-9000 --non-interactive --force
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-sa.json

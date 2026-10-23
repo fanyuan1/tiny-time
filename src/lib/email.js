@@ -8,7 +8,7 @@ const FROM_EMAIL = 'noreply@notifications.engsight.app'
 
 // Cloud Function endpoint URL - update with your actual project ID after deploying
 // Format: https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/sendEmail
-const CLOUD_FUNCTION_URL = import.meta.env.VITE_CLOUD_FUNCTION_URL || 'https://us-central1-engsightlabs.cloudfunctions.net/sendEmail';
+const CLOUD_FUNCTION_URL = import.meta.env.VITE_CLOUD_FUNCTION_URL || 'https://us-central1-tiny-time-9000.cloudfunctions.net/sendEmail';
 
 /**
  * Generic email sender (calls Firebase Cloud Function)
