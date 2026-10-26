@@ -1,6 +1,6 @@
 @import 'tailwindcss';
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (@media (prefers-color-scheme: dark));
 
 @theme {
   --radius-lg: var(--radius);
@@ -89,12 +89,13 @@
     --chart-5: 27 87% 67%;
   }
 
-  .dark {
-    --background: 222.2 84% 4.9%;
+  @media (prefers-color-scheme: dark) {
+    :root {
+    --background: 222.2 47.4% 11.2%;
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+    --card: 222.2 47.4% 11.2%;
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
+    --popover: 222.2 47.4% 11.2%;
     --popover-foreground: 210 40% 98%;
     --primary: 217.2 91.2% 59.8%;
     --primary-foreground: 222.2 47.4% 11.2%;
@@ -106,14 +107,101 @@
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    --border: 217.2 32.6% 22%;
+    --input: 217.2 32.6% 24%;
     --ring: 224.3 76.3% 48%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+
+    /*
+      Components use literal palette utilities (bg-white, text-gray-600, bg-blue-50).
+      Rather than a dark: variant on each, mirror those scales here (50<->950,
+      100<->900, ...) so light tints become dark tints and dark text becomes light.
+      Consequence: "white" means "surface", so don't use text-white on a colored
+      fill; use text-primary-foreground instead.
+    */
+      --color-white: oklch(20.8% 0.042 265.755);
+      --color-gray-50: oklch(13% 0.028 261.692);
+      --color-gray-100: oklch(21% 0.034 264.665);
+      --color-gray-200: oklch(27.8% 0.033 256.848);
+      --color-gray-300: oklch(37.3% 0.034 259.733);
+      --color-gray-400: oklch(44.6% 0.03 256.802);
+      --color-gray-500: oklch(55.1% 0.027 264.364);
+      --color-gray-600: oklch(70.7% 0.022 261.325);
+      --color-gray-700: oklch(87.2% 0.01 258.338);
+      --color-gray-800: oklch(92.8% 0.006 264.531);
+      --color-gray-900: oklch(96.7% 0.003 264.542);
+      --color-gray-950: oklch(98.5% 0.002 247.839);
+      --color-slate-50: oklch(12.9% 0.042 264.695);
+      --color-slate-100: oklch(20.8% 0.042 265.755);
+      --color-slate-200: oklch(27.9% 0.041 260.031);
+      --color-slate-300: oklch(37.2% 0.044 257.287);
+      --color-slate-400: oklch(44.6% 0.043 257.281);
+      --color-slate-500: oklch(55.4% 0.046 257.417);
+      --color-slate-600: oklch(70.4% 0.04 256.788);
+      --color-slate-700: oklch(86.9% 0.022 252.894);
+      --color-slate-800: oklch(92.9% 0.013 255.508);
+      --color-slate-900: oklch(96.8% 0.007 247.896);
+      --color-slate-950: oklch(98.4% 0.003 247.858);
+      --color-blue-50: oklch(28.2% 0.091 267.935);
+      --color-blue-100: oklch(37.9% 0.146 265.522);
+      --color-blue-200: oklch(42.4% 0.199 265.638);
+      --color-blue-300: oklch(48.8% 0.243 264.376);
+      --color-blue-400: oklch(54.6% 0.245 262.881);
+      --color-blue-500: oklch(62.3% 0.214 259.815);
+      --color-blue-600: oklch(70.7% 0.165 254.624);
+      --color-blue-700: oklch(80.9% 0.105 251.813);
+      --color-blue-800: oklch(88.2% 0.059 254.128);
+      --color-blue-900: oklch(93.2% 0.032 255.585);
+      --color-blue-950: oklch(97% 0.014 254.604);
+      --color-green-50: oklch(26.6% 0.065 152.934);
+      --color-green-100: oklch(39.3% 0.095 152.535);
+      --color-green-200: oklch(44.8% 0.119 151.328);
+      --color-green-300: oklch(52.7% 0.154 150.069);
+      --color-green-400: oklch(62.7% 0.194 149.214);
+      --color-green-500: oklch(72.3% 0.219 149.579);
+      --color-green-600: oklch(79.2% 0.209 151.711);
+      --color-green-700: oklch(87.1% 0.15 154.449);
+      --color-green-800: oklch(92.5% 0.084 155.995);
+      --color-green-900: oklch(96.2% 0.044 156.743);
+      --color-green-950: oklch(98.2% 0.018 155.826);
+      --color-yellow-50: oklch(28.6% 0.066 53.813);
+      --color-yellow-100: oklch(42.1% 0.095 57.708);
+      --color-yellow-200: oklch(47.6% 0.114 61.907);
+      --color-yellow-300: oklch(55.4% 0.135 66.442);
+      --color-yellow-400: oklch(68.1% 0.162 75.834);
+      --color-yellow-500: oklch(79.5% 0.184 86.047);
+      --color-yellow-600: oklch(85.2% 0.199 91.936);
+      --color-yellow-700: oklch(90.5% 0.182 98.111);
+      --color-yellow-800: oklch(94.5% 0.129 101.54);
+      --color-yellow-900: oklch(97.3% 0.071 103.193);
+      --color-yellow-950: oklch(98.7% 0.026 102.212);
+      --color-red-50: oklch(25.8% 0.092 26.042);
+      --color-red-100: oklch(39.6% 0.141 25.723);
+      --color-red-200: oklch(44.4% 0.177 26.899);
+      --color-red-300: oklch(50.5% 0.213 27.518);
+      --color-red-400: oklch(57.7% 0.245 27.325);
+      --color-red-500: oklch(63.7% 0.237 25.331);
+      --color-red-600: oklch(70.4% 0.191 22.216);
+      --color-red-700: oklch(80.8% 0.114 19.571);
+      --color-red-800: oklch(88.5% 0.062 18.334);
+      --color-red-900: oklch(93.6% 0.032 17.717);
+      --color-red-950: oklch(97.1% 0.013 17.38);
+      --color-violet-50: oklch(28.3% 0.141 291.089);
+      --color-violet-100: oklch(38% 0.189 293.745);
+      --color-violet-200: oklch(43.2% 0.232 292.759);
+      --color-violet-300: oklch(49.1% 0.27 292.581);
+      --color-violet-400: oklch(54.1% 0.281 293.009);
+      --color-violet-500: oklch(60.6% 0.25 292.717);
+      --color-violet-600: oklch(70.2% 0.183 293.541);
+      --color-violet-700: oklch(81.1% 0.111 293.571);
+      --color-violet-800: oklch(89.4% 0.057 293.283);
+      --color-violet-900: oklch(94.3% 0.029 294.588);
+      --color-violet-950: oklch(96.9% 0.016 293.756);
+    }
   }
 }
 
@@ -122,7 +210,8 @@
     @apply border-border;
   }
   html {
-    /* Matches the bottom of the body gradient so overscroll doesn't flash white */
+    color-scheme: light dark;
+    /* Matches the bottom of the body gradient so overscroll doesn't flash */
     background-color: #f5f3ff;
     overscroll-behavior-y: none;
   }
@@ -135,18 +224,26 @@
       'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
       sans-serif;
   }
+  @media (prefers-color-scheme: dark) {
+    html {
+      background-color: #161330;
+    }
+    body {
+      /* Header (bg-white/80 over this top) renders ~#0e1628, the dark theme-color in index.html */
+      background: linear-gradient(180deg, #0b1120 0%, #0d1530 35%, #161330 100%);
+    }
+  }
 }
 
 /* Google Places PlaceAutocompleteElement — match the shadcn <Input> look.
-   The widget adapts to the OS light/dark theme by default and this app is
-   light-only, so pin color-scheme. Border/background/radius are set on the
-   host element (officially supported); the inner input part is made
+   The widget adapts to the OS light/dark theme, like the app.
+   Border/background/radius are set on the host element (officially supported); the inner input part is made
    transparent so the whole widget reads as one field. */
 .gmp-autocomplete gmp-place-autocomplete {
   display: block;
   width: 100%;
-  color-scheme: light;
-  background-color: #ffffff;
+  color-scheme: light dark;
+  background-color: var(--color-white);
   border: 1px solid hsl(var(--input));
   border-radius: 0.5rem;
   box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
