@@ -16,7 +16,7 @@ export const getEmailLayout = (content) => {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             line-height: 1.6;
             color: #374151;
-            background: linear-gradient(to bottom right, #EFF6FF, #ffffff, #FAF5FF);
+            background: linear-gradient(to bottom right, #EEF8FE, #ffffff, #E3F1FD);
             margin: 0;
             padding: 20px;
         }
@@ -29,7 +29,7 @@ export const getEmailLayout = (content) => {
             overflow: hidden;
         }
         .header {
-            background: linear-gradient(to right, #2563EB, #7C3AED);
+            background: #1776CF;
             color: white;
             padding: 24px;
             text-align: center;
@@ -61,7 +61,7 @@ export const getEmailLayout = (content) => {
         }
         .button {
             display: inline-block;
-            background: #2563EB;
+            background: #1776CF;
             color: #ffffff !important;
             text-decoration: none;
             padding: 12px 24px;
@@ -70,12 +70,12 @@ export const getEmailLayout = (content) => {
             margin: 16px 0;
         }
         .button:hover {
-            background: #1D4ED8;
+            background: #1366B3;
             color: #ffffff !important;
         }
         .info-box {
             background: #F3F4F6;
-            border-left: 4px solid #2563EB;
+            border-left: 4px solid #1776CF;
             padding: 16px;
             margin: 16px 0;
             border-radius: 4px;
@@ -103,7 +103,7 @@ export const getEmailLayout = (content) => {
 <body>
     <div class="container">
         <div class="header">
-            <div class="logo">⏰ TinyTime</div>
+            <div class="logo"><img src="https://tinytime.engsight.app/favicon.png" alt="" width="20" height="20" style="vertical-align: middle; border-radius: 5px;"> TinyTime</div>
             <div style="font-size: 20px; font-weight: 600;">Playdate Scheduling</div>
         </div>
         <div class="content">

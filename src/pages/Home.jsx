@@ -657,7 +657,7 @@ export default function Home() {
                     <div className="text-center space-y-3">
                         <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-slate-900 text-balance">
                             Schedule playdates{" "}
-                            <span className="bg-linear-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">effortlessly</span>
+                            <span className="bg-linear-to-r from-primary to-brand-sky bg-clip-text text-transparent">effortlessly</span>
                         </h1>
                         <p className="text-base sm:text-lg text-muted-foreground max-w-md mx-auto text-pretty">
                             Share when you're free. The other parent picks a time. No sign-up.
