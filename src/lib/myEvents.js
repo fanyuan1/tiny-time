@@ -1,6 +1,7 @@
 // Events this device created or opened, so users can find them again without email.
 // Stored locally because the app has no accounts.
 const KEY = "tinytime:myEvents";
+const MAX_EVENTS = 20;
 
 export const getMyEvents = () => {
     try {
@@ -32,7 +33,6 @@ export const saveMyEvent = (event, role) => {
         role: existing?.role || role,
         updatedAt: Date.now(),
     };
-    write([entry, ...list.filter((e) => e.id !== event.id)]);
+    // Capped since entries can't be removed; the oldest drop off.
+    write([entry, ...list.filter((e) => e.id !== event.id)].slice(0, MAX_EVENTS));
 };
-
-export const removeMyEvent = (id) => write(getMyEvents().filter((e) => e.id !== id));
