@@ -1,13 +1,3 @@
-import { db } from "./firebase";
-import {
-    collection,
-    doc,
-    getDoc,
-    setDoc,
-    updateDoc,
-    arrayUnion,
-    Timestamp
-} from "firebase/firestore";
 import { nanoid } from "nanoid";
 import {
     sendEventCreatedEmail,
@@ -15,8 +5,15 @@ import {
     sendConfirmationEmails
 } from "./email";
 
+// Firestore is loaded on demand so the landing page doesn't download it.
+const firestore = async () => {
+    const [{ db }, fs] = await Promise.all([import("./firebase"), import("firebase/firestore")]);
+    return { db, ...fs };
+};
+
 export const createEvent = async (eventData) => {
     try {
+        const { db, doc, setDoc, Timestamp } = await firestore();
         // Remove settings, move duration to top level if not already there
         const { settings, ...rest } = eventData;
         const duration = eventData.duration || settings?.interval || 30;
@@ -48,18 +45,13 @@ export const createEvent = async (eventData) => {
 
 export const getEvent = async (eventId) => {
     try {
-        console.log("Attempting to fetch event:", eventId);
+        const { db, doc, getDoc } = await firestore();
         const docRef = doc(db, "events", eventId);
-        console.log("Document reference created for:", docRef.path);
         const docSnap = await getDoc(docRef);
-        console.log("Document snapshot received, exists:", docSnap.exists());
 
         if (docSnap.exists()) {
-            const data = { id: docSnap.id, ...docSnap.data() };
-            console.log("Event data:", data);
-            return data;
+            return { id: docSnap.id, ...docSnap.data() };
         } else {
-            console.log("No such document!");
             return null;
         }
     } catch (e) {
@@ -70,6 +62,7 @@ export const getEvent = async (eventId) => {
 
 export const updateEventStatus = async (eventId, status, confirmedSlot = null, guestEmail = null) => {
     try {
+        const { db, doc, getDoc, updateDoc } = await firestore();
         const eventRef = doc(db, "events", eventId);
         const updateData = {
             status: status,
@@ -95,6 +88,7 @@ export const updateEventStatus = async (eventId, status, confirmedSlot = null, g
 
 export const addProposal = async (eventId, proposedSlots, proposerEmail, duration) => {
     try {
+        const { db, doc, getDoc, updateDoc } = await firestore();
         const eventRef = doc(db, "events", eventId);
         const updateData = {
             proposedSlots: proposedSlots, // Now contains { start }
@@ -127,6 +121,7 @@ export const addProposal = async (eventId, proposedSlots, proposerEmail, duratio
 
 export const updateEventDetails = async (eventId, updates) => {
     try {
+        const { db, doc, updateDoc } = await firestore();
         const eventRef = doc(db, "events", eventId);
 
         // Only include fields that are defined
@@ -149,4 +144,11 @@ export const updateEventDetails = async (eventId, updates) => {
         console.error("Error updating event details: ", e);
         throw e;
     }
+};
+
+export const addPushToken = async (eventId, role, token) => {
+    const { db, doc, updateDoc, arrayUnion } = await firestore();
+    // The pushNotify Cloud Function reads these to decide who to notify.
+    const field = role === "host" ? "hostPushTokens" : "guestPushTokens";
+    await updateDoc(doc(db, "events", eventId), { [field]: arrayUnion(token) });
 };

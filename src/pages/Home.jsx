@@ -4,6 +4,10 @@ import { useEvent } from "@/context/EventContext";
 import { createEvent, getEvent, updateEventStatus, addProposal, updateEventDetails } from "@/lib/db";
 import { EventForm } from "@/components/EventForm";
 import { TimeSlotPicker } from "@/components/TimeSlotPicker";
+import { NotifyButton } from "@/components/NotifyButton";
+import { MyEventsList } from "@/components/MyEventsList";
+import { saveMyEvent } from "@/lib/myEvents";
+import { canNativeShare, nativeShare, copyText } from "@/lib/share";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -11,19 +15,20 @@ import { Loader2, Share2, Check, Calendar, Link as LinkIcon, MapPin, Clock, Penc
 import { format, addMinutes } from "date-fns";
 import Confirmation from "./Confirmation";
 
+// Keeps primary actions in thumb reach on phones; plain flow on larger screens.
+const STICKY_ACTIONS = "sticky bottom-0 z-10 -mx-4 -mb-[calc(env(safe-area-inset-bottom)+1.5rem)] sm:mb-0 px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] bg-white/85 backdrop-blur-md border-t border-slate-200/70 sm:static sm:mx-0 sm:p-0 sm:bg-transparent sm:backdrop-blur-none sm:border-0";
+
 export default function Home() {
-    console.log("Home rendering...");
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const eventId = searchParams.get("eventId");
     const urlMode = searchParams.get("mode"); // Move to top level
-    const context = useEvent();
-    console.log("EventContext value:", context);
-    const { state, dispatch } = context;
+    const { state, dispatch } = useEvent();
     const [loading, setLoading] = useState(!!eventId);
     const [shareUrl, setShareUrl] = useState("");
     const [copied, setCopied] = useState(false);
     const [proposalSlots, setProposalSlots] = useState([]); // Moved to top level for React Hooks rules
+    const [prefillKey, setPrefillKey] = useState(0); // Remounts EventForm after share-target prefill
 
     useEffect(() => {
         if (eventId) {
@@ -32,6 +37,7 @@ export default function Home() {
                 try {
                     const event = await getEvent(eventId);
                     if (event) {
+                        saveMyEvent(event, "guest");
                         if (urlMode === "edit") {
                             // Load event in edit mode
                             dispatch({ type: "LOAD_EVENT", payload: { eventData: event, selectedSlots: event.proposedSlots || [], mode: "edit_event" } });
@@ -59,6 +65,22 @@ export default function Home() {
             };
             loadEvent();
         } else {
+            // Content shared into the installed app via the manifest share_target.
+            const shared = ["title", "text", "url"].map((k) => searchParams.get(k)).filter(Boolean).join(" ");
+            if (shared) {
+                const linkedEventId = shared.match(/[?&]eventId=([\w-]+)/)?.[1];
+                if (linkedEventId) {
+                    navigate(`/?eventId=${linkedEventId}`, { replace: true });
+                    return;
+                }
+                const email = shared.match(/[\w.%+-]+@[\w.-]+\.[a-z]{2,}/i)?.[0];
+                dispatch({
+                    type: "UPDATE_EVENT_DATA",
+                    payload: { guestEmail: email || "", description: (email ? shared.replace(email, "") : shared).trim() },
+                });
+                setPrefillKey((k) => k + 1);
+                navigate("/", { replace: true });
+            }
             // No eventId, ensure we're in create mode and not loading
             dispatch({ type: "SET_MODE", payload: "create" });
             setLoading(false);
@@ -83,9 +105,8 @@ export default function Home() {
                 // settings removed
             };
 
-            console.log("Publishing event:", eventPayload); // Debug log
-
             const newEventId = await createEvent(eventPayload);
+            saveMyEvent({ id: newEventId, title: eventPayload.title, status: "pending" }, "host");
             const url = `${window.location.origin}/?eventId=${newEventId}`;
             setShareUrl(url);
             dispatch({ type: "SET_MODE", payload: "share" });
@@ -97,45 +118,15 @@ export default function Home() {
         }
     };
 
-    const handleCopyLink = () => {
-        // Create shareable message with event title
-        const shareMessage = `You're invited to ${state.eventData?.title || 'a playdate'}! View details & RSVP: ${shareUrl}`;
-        
-        // Try modern clipboard API first
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(shareMessage)
-                .then(() => {
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 2000);
-                })
-                .catch(() => {
-                    // Fallback
-                    fallbackCopyText(shareMessage);
-                });
-        } else {
-            // Fallback
-            fallbackCopyText(shareMessage);
+    const copyWithFeedback = async (text) => {
+        if (await copyText(text)) {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
         }
     };
 
-    const fallbackCopyText = (text) => {
-        const textArea = document.createElement('textarea');
-        textArea.value = text;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        textArea.style.top = '-999999px';
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        try {
-            document.execCommand('copy');
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        } catch (err) {
-            console.error('Failed to copy:', err);
-        }
-        document.body.removeChild(textArea);
-    };
+    const inviteText = `You're invited to ${state.eventData?.title || 'a playdate'}! View details & RSVP:`;
+    const handleCopyLink = () => copyWithFeedback(`${inviteText} ${shareUrl}`);
 
     if (loading) {
         return (
@@ -154,7 +145,7 @@ export default function Home() {
     // --- HOST FLOW: STEP 2 (SELECT TIMES) ---
     if (state.mode === "pick_time") {
         return (
-            <div className="w-full max-w-3xl mx-auto p-4 space-y-6">
+            <div className="w-full max-w-3xl mx-auto space-y-6">
                 <div className="text-center space-y-2">
                     <h2 className="text-2xl font-bold text-gray-900">Select Available Times</h2>
                     <p className="text-gray-500">Choose all times that work for you</p>
@@ -173,18 +164,19 @@ export default function Home() {
 
                 />
 
-                <div className="flex flex-col gap-3">
+                <div className={`flex flex-row-reverse gap-2 ${STICKY_ACTIONS}`}>
                     {/* Sync Calendar Button Removed */}
 
 
                     <Button
                         onClick={handlePublish}
                         disabled={state.selectedSlots.length === 0}
-                        className="w-full"
+                        className="flex-1"
                     >
                         Create &amp; Share Event
+                        {state.selectedSlots.length > 0 && ` (${state.selectedSlots.length})`}
                     </Button>
-                    <Button variant="ghost" onClick={() => dispatch({ type: "SET_MODE", payload: "create" })}>
+                    <Button variant="outline" onClick={() => dispatch({ type: "SET_MODE", payload: "create" })}>
                         Back
                     </Button>
                 </div>
@@ -214,7 +206,15 @@ export default function Home() {
                         </Button>
                     </div>
 
-                    <Button className="w-full" onClick={() => navigate(shareUrl.replace(window.location.origin, ''))}>
+                    {canNativeShare() && (
+                        <Button className="w-full" onClick={() => nativeShare({ title: state.eventData?.title, text: inviteText, url: shareUrl })}>
+                            <Share2 className="w-4 h-4 mr-2" /> Share invite
+                        </Button>
+                    )}
+
+                    <NotifyButton eventId={shareUrl.split("eventId=")[1]} role="host" label="Notify me when they respond" />
+
+                    <Button className="w-full" variant={canNativeShare() ? "outline" : "default"} onClick={() => navigate(shareUrl.replace(window.location.origin, ''))}>
                         View Event
                     </Button>
                 </CardContent>
@@ -238,7 +238,7 @@ export default function Home() {
         const slotsToShow = state.selectedSlots || [];
 
         return (
-            <div className="w-full max-w-3xl mx-auto p-4 space-y-6">
+            <div className="w-full max-w-3xl mx-auto space-y-6">
                 <Card>
                     <CardHeader>
                         <div className="flex items-center justify-between">
@@ -313,7 +313,7 @@ export default function Home() {
                     </h3>
 
                     {/* Scrollable time slots container */}
-                    <div className="max-h-96 overflow-y-auto grid grid-cols-1 gap-2 pr-2">
+                    <div className="sm:max-h-96 sm:overflow-y-auto grid grid-cols-1 gap-2 sm:pr-2">
                         {slotsToShow.map((slot, i) => (
                             <Button
                                 key={i}
@@ -491,7 +491,7 @@ export default function Home() {
         const proposerEmail = state.eventData.guestEmail || "";
 
         return (
-            <div className="w-full max-w-3xl mx-auto p-4 space-y-6">
+            <div className="w-full max-w-3xl mx-auto space-y-6">
                 <div className="text-center space-y-2">
                     <h2 className="text-2xl font-bold text-gray-900">Select Available Times</h2>
                     <p className="text-gray-500">Choose all times that work for you</p>
@@ -543,6 +543,7 @@ export default function Home() {
                                     proposerEmail,
                                     state.eventData.duration // Pass duration
                                 );
+                                saveMyEvent({ id: state.eventData.id, status: "negotiating" }, "guest");
                                 dispatch({ type: "SET_MODE", payload: "proposal_sent" });
                             } catch (e) {
                                 console.error(e);
@@ -566,6 +567,7 @@ export default function Home() {
 
     if (state.mode === "proposal_sent") {
         const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/?eventId=${state.eventData.id}` : "";
+        const proposalText = `New time(s) proposed for ${state.eventData?.title || 'your playdate'}! View details & confirm:`;
 
         return (
             <Card className="w-full max-w-3xl mx-auto text-center">
@@ -588,51 +590,22 @@ export default function Home() {
                             <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => {
-                                    // Create shareable message with event title
-                                    const shareMessage = `New time(s) proposed for ${state.eventData?.title || 'your playdate'}! View details & confirm: ${shareUrl}`;
-                                    
-                                    // Use robust copy logic
-                                    const copyToClipboard = (text) => {
-                                        if (navigator.clipboard && navigator.clipboard.writeText) {
-                                            navigator.clipboard.writeText(text)
-                                                .then(() => {
-                                                    setCopied(true);
-                                                    setTimeout(() => setCopied(false), 2000);
-                                                })
-                                                .catch(() => fallbackCopy(text));
-                                        } else {
-                                            fallbackCopy(text);
-                                        }
-                                    };
-
-                                    const fallbackCopy = (text) => {
-                                        const textArea = document.createElement('textarea');
-                                        textArea.value = text;
-                                        textArea.style.position = 'fixed';
-                                        document.body.appendChild(textArea);
-                                        textArea.focus();
-                                        textArea.select();
-                                        try {
-                                            document.execCommand('copy');
-                                            setCopied(true);
-                                            setTimeout(() => setCopied(false), 2000);
-                                        } catch (err) {
-                                            console.error('Fallback: Oops, unable to copy', err);
-                                            alert("Failed to copy link manually.");
-                                        }
-                                        document.body.removeChild(textArea);
-                                    };
-
-                                    copyToClipboard(shareMessage);
-                                }}
+                                onClick={() => copyWithFeedback(`${proposalText} ${shareUrl}`)}
                             >
                                 {copied ? <Check className="w-4 h-4" /> : <LinkIcon className="w-4 h-4" />}
                             </Button>
                         </div>
                     </div>
 
-                    <Button className="w-full" onClick={() => window.location.reload()}>
+                    {canNativeShare() && (
+                        <Button className="w-full" onClick={() => nativeShare({ title: state.eventData?.title, text: proposalText, url: shareUrl })}>
+                            <Share2 className="w-4 h-4 mr-2" /> Share with host
+                        </Button>
+                    )}
+
+                    <NotifyButton eventId={state.eventData.id} role="guest" label="Notify me when the host confirms" />
+
+                    <Button className="w-full" variant={canNativeShare() ? "outline" : "default"} onClick={() => window.location.reload()}>
                         Back to Event
                     </Button>
                 </CardContent>
@@ -679,19 +652,16 @@ export default function Home() {
         const isEditing = state.mode === "edit_event";
 
         return (
-            <div className="w-full max-w-2xl mx-auto space-y-8">
+            <div className="w-full max-w-2xl mx-auto space-y-6 sm:space-y-8">
                 {!isEditing && (
-                    <div className="text-center space-y-4">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-2">
-                            ⏰ TinyTime
-                        </div>
-                        <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
+                    <div className="text-center space-y-3">
+                        <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-slate-900 text-balance">
                             Schedule playdates{" "}
-                            <span className="text-primary">effortlessly</span>
+                            <span className="bg-linear-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">effortlessly</span>
                         </h1>
-                        {/* <p className="text-lg text-muted-foreground max-w-lg mx-auto">
-                            No more endless texts. Share your availability and let parents pick a time that works.
-                        </p> */}
+                        <p className="text-base sm:text-lg text-muted-foreground max-w-md mx-auto text-pretty">
+                            Share when you're free. The other parent picks a time. No sign-up.
+                        </p>
                     </div>
                 )}
                 {isEditing && (
@@ -700,9 +670,10 @@ export default function Home() {
                         <p className="text-muted-foreground mt-2">Update your event information</p>
                     </div>
                 )}
-                <Card className="border-2">
-                    <CardContent className="pt-8 pb-6">
+                <Card>
+                    <CardContent className="pt-5 sm:pt-6">
                         <EventForm
+                            key={prefillKey}
                             onSubmit={async (data) => {
                                 if (isEditing) {
                                     // Update existing event in database
@@ -752,6 +723,7 @@ export default function Home() {
                         )}
                     </CardContent>
                 </Card>
+                {!isEditing && <MyEventsList />}
             </div>
         );
     }

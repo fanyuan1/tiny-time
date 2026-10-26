@@ -104,9 +104,9 @@ export const TimeSlotPicker = ({
     };
 
     return (
-        <div className="w-full max-w-4xl mx-auto shadow-lg rounded-xl overflow-hidden grid grid-cols-1 md:grid-cols-2 border-2">
+        <div className="w-full max-w-4xl mx-auto rounded-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2 border border-slate-200/70 bg-white shadow-[0_1px_2px_rgb(15_23_42/0.04),0_12px_32px_-12px_rgb(30_58_138/0.15)]">
             {/* Left Panel: Calendar & Duration */}
-            <Card className="rounded-none border-0 border-r-2 shadow-none">
+            <Card className="rounded-none border-0 border-b md:border-b-0 md:border-r shadow-none bg-white backdrop-blur-none">
                 <CardHeader className="space-y-6">
                     {!readOnly && (
                         <div className="space-y-3">
@@ -157,7 +157,7 @@ export const TimeSlotPicker = ({
                             ))}
                             {/* Padding cells to align the first day of month with correct day-of-week */}
                             {Array.from({ length: paddingDays }).map((_, i) => (
-                                <div key={`padding-${i}`} className="w-9 h-9" />
+                                <div key={`padding-${i}`} className="w-10 h-10 sm:w-9 sm:h-9" />
                             ))}
                             {daysInMonth.map((day, i) => {
                                 const isSelectedDate = isSameDay(day, selectedDate);
@@ -170,7 +170,7 @@ export const TimeSlotPicker = ({
                                         onClick={() => !isPastDate && setSelectedDate(day)}
                                         disabled={isPastDate}
                                         className={cn(
-                                            "w-9 h-9 rounded-md flex items-center justify-center mx-auto transition-all relative text-sm",
+                                            "w-10 h-10 sm:w-9 sm:h-9 rounded-full flex items-center justify-center mx-auto transition-all relative text-sm",
                                             isPastDate
                                                 ? "text-muted-foreground/30 cursor-not-allowed"
                                                 : isSelectedDate
@@ -193,7 +193,7 @@ export const TimeSlotPicker = ({
             </Card>
 
             {/* Right Panel: Time Slots */}
-            <Card className="rounded-none border-0 shadow-none bg-accent/30">
+            <Card className="rounded-none border-0 shadow-none bg-slate-50/80 backdrop-blur-none">
                 <CardHeader className="pb-3">
                     <CardTitle className="text-base">Choose start time ({duration} min duration)</CardTitle>
                     <p className="text-sm text-muted-foreground">{format(selectedDate, "EEEE, MMMM d")}</p>
@@ -201,7 +201,12 @@ export const TimeSlotPicker = ({
                 </CardHeader>
                 <CardContent className="flex flex-col">
                     {/* Added px-2 to fix left edge cut off when scaled */}
-                    <div className="flex-1 overflow-y-auto max-h-[450px] space-y-2 px-2 custom-scrollbar">
+                    <div className="grid grid-cols-3 gap-2 md:grid-cols-1 md:overflow-y-auto md:max-h-[450px] md:px-2 custom-scrollbar">
+                        {timeSlots.length === 0 && (
+                            <p className="col-span-full py-6 text-center text-sm text-muted-foreground">
+                                No times left on this day. Pick another date.
+                            </p>
+                        )}
                         {timeSlots.map((time, i) => {
                             const selected = isSelected(time);
 
@@ -211,14 +216,14 @@ export const TimeSlotPicker = ({
                                     onClick={() => handleTimeClick(time)}
                                     disabled={readOnly}
                                     className={cn(
-                                        "w-full py-3 px-4 rounded-lg border text-left transition-all flex items-center justify-between",
+                                        "w-full py-2.5 px-2 md:py-3 md:px-4 rounded-lg border text-sm md:text-base transition-all flex items-center justify-center md:justify-between",
                                         selected
-                                            ? "bg-primary text-primary-foreground border-primary shadow-md transform scale-[1.02]"
-                                            : "bg-background border-border hover:border-primary hover:shadow-xs hover:scale-[1.01]"
+                                            ? "bg-primary text-primary-foreground border-primary shadow-md md:scale-[1.02]"
+                                            : "bg-white border-border hover:border-primary hover:shadow-xs md:hover:scale-[1.01]"
                                     )}
                                 >
                                     <span className="font-medium">{format(time, "h:mm a")}</span>
-                                    {selected && <span className="text-xs">✓</span>}
+                                    {selected && <span className="hidden md:inline text-xs">✓</span>}
                                 </button>
                             );
                         })}

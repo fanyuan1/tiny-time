@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { getEvent } from "@/lib/db";
 import { downloadICS } from "@/lib/ics";
+import { canNativeShare, nativeShare, copyText } from "@/lib/share";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { CheckCircle, Calendar, MapPin, Clock, Pencil, Share2, Check, FileText, CalendarPlus } from "lucide-react";
@@ -14,45 +15,15 @@ export default function Confirmation({ eventData }) {
     const [event, setEvent] = useState(eventData || null);
     const [copied, setCopied] = useState(false);
 
-    const handleShare = () => {
+    const handleShare = async () => {
         const eventLink = `${window.location.origin}/?eventId=${eventId}`;
-        // Create shareable message with event title
-        const shareMessage = `${event?.title || 'Your playdate'} has been confirmed! View details & add to your calendar: ${eventLink}`;
-        
-        // Try modern clipboard API first
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(shareMessage)
-                .then(() => {
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 2000);
-                })
-                .catch(() => {
-                    // Fallback
-                    fallbackCopyText(shareMessage);
-                });
-        } else {
-            // Fallback
-            fallbackCopyText(shareMessage);
-        }
-    };
-
-    const fallbackCopyText = (text) => {
-        const textArea = document.createElement('textarea');
-        textArea.value = text;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        textArea.style.top = '-999999px';
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        try {
-            document.execCommand('copy');
+        const text = `${event?.title || 'Your playdate'} has been confirmed! View details & add to your calendar:`;
+        if (canNativeShare()) {
+            await nativeShare({ title: event?.title, text, url: eventLink });
+        } else if (await copyText(`${text} ${eventLink}`)) {
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
-        } catch (err) {
-            console.error('Failed to copy:', err);
         }
-        document.body.removeChild(textArea);
     };
 
     useEffect(() => {
@@ -111,7 +82,7 @@ export default function Confirmation({ eventData }) {
     };
 
     return (
-        <div className="min-h-dvh w-full flex flex-col items-center justify-center">
+        <div className="w-full">
             <Card className="w-full max-w-3xl mx-auto text-center">
                 <CardHeader>
                     <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
