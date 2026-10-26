@@ -1,0 +1,25 @@
+rules_version = '2';
+
+// No accounts: an event's random ID is the capability, so anyone with the link
+// can read and act on it, but nobody can list or delete events.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /events/{eventId} {
+      allow get: if true;
+      allow list, delete: if false;
+
+      allow create: if request.resource.data.status == 'pending'
+        && request.resource.data.hostEmail is string
+        && request.resource.data.proposedSlots is list;
+
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'title', 'description', 'location', 'hostEmail', 'guestEmail', 'duration',
+          'status', 'confirmedSlot', 'proposedSlots', 'updatedAt',
+          'hostPushTokens', 'guestPushTokens'
+        ])
+        // A confirmed time can't be changed (matches updateEventDetails in src/lib/db.js).
+        && (resource.data.status != 'confirmed'
+          || !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'confirmedSlot', 'proposedSlots']));
+    }
+  }
+}
