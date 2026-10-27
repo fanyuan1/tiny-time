@@ -1,5 +1,5 @@
 // Bump to drop old caches on deploy.
-const CACHE = 'tinytime-v5'
+const CACHE = 'tinytime-v6'
 const SHELL = ['/', '/manifest.webmanifest', '/favicon.svg', '/pwa-192.png']
 
 self.addEventListener('install', (event) => {
