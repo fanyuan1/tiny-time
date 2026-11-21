@@ -1,7 +1,2 @@
 {
-  "public/sw.js": {
-    "lints/no-comments": {
-      "count": 1
-    }
-  }
 }

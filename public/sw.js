@@ -45,7 +45,7 @@ self.addEventListener('fetch', (event) => {
 
 self.addEventListener('push', (event) => {
     let payload = {}
-    try { payload = event.data.json() } catch { /* not JSON, show defaults */ }
+    try { payload = event.data.json() } catch { payload = {} }
     const data = payload.data || payload
     event.waitUntil(
         self.registration.showNotification(data.title || 'TinyTime', {
