@@ -31,10 +31,10 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
-    "dev-kit": "github:fanyuan1/dev-kit",
     "eslint": "^10.15.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.6.1",
+    "lints": "github:fanyuan1/lints",
     "postcss": "^8.4.49",
     "tailwindcss": "^4.3.3",
     "vite": "^6.0.5"
