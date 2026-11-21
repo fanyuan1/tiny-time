@@ -4,7 +4,7 @@ import { Button } from "./ui/Button";
 import { pushSupported, enablePush } from "@/lib/push";
 
 export const NotifyButton = ({ eventId, role, label }) => {
-    const [status, setStatus] = useState("idle"); // idle, loading, on, error
+    const [status, setStatus] = useState("idle");
     const [error, setError] = useState("");
 
     if (!pushSupported()) return null;

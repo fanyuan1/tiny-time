@@ -1,8 +1,5 @@
 import { format, addMinutes } from "date-fns";
 
-/**
- * Base email layout with styling consistent with the app
- */
 export const getEmailLayout = (content) => {
     return `
 <!DOCTYPE html>
@@ -119,9 +116,6 @@ export const getEmailLayout = (content) => {
 `;
 };
 
-/**
- * Template for Scenario A: Host notification when event is created
- */
 export const hostEventCreatedTemplate = (event, shareUrl) => {
     const content = `
         <h1 class="title">🎉 Your Event is Ready!</h1>
@@ -152,9 +146,6 @@ export const hostEventCreatedTemplate = (event, shareUrl) => {
     return getEmailLayout(content);
 };
 
-/**
- * Template for Scenario B: Guest invitation when event is created
- */
 export const guestInviteTemplate = (event, shareUrl) => {
     const content = `
         <h1 class="title">📅 You're Invited!</h1>
@@ -181,9 +172,6 @@ export const guestInviteTemplate = (event, shareUrl) => {
     return getEmailLayout(content);
 };
 
-/**
- * Template for Scenario C: Host notification when guest proposes new times
- */
 export const hostProposalTemplate = (event) => {
     const eventUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/?eventId=${event.id}`;
 
@@ -207,9 +195,6 @@ export const hostProposalTemplate = (event) => {
     return getEmailLayout(content);
 };
 
-/**
- * Template for Scenario D: Guest confirmation that proposal was sent
- */
 export const guestProposalSentTemplate = (event) => {
     const content = `
         <h1 class="title">✅ Proposal Sent!</h1>
@@ -231,9 +216,6 @@ export const guestProposalSentTemplate = (event) => {
     return getEmailLayout(content);
 };
 
-/**
- * Template for Scenario E: Confirmation email for both parties
- */
 export const confirmationTemplate = (event) => {
     const startTime = new Date(event.confirmedSlot.start);
     const endTime = addMinutes(startTime, event.duration || 30);

@@ -5,17 +5,17 @@ import { createContext, useContext, useReducer } from "react";
 const EventContext = createContext();
 
 const initialState = {
-    mode: "create", // create, view, book
+    mode: "create",
     eventData: {
         title: "",
         description: "",
         location: "",
         hostEmail: "",
-        duration: 60, // minutes
+        duration: 60,
     },
-    selectedSlots: [], // Array of { start }
-    originalProposedSlots: [], // Store original proposed slots for back navigation
-    isEditingEvent: false, // Track if user is editing event details
+    selectedSlots: [],
+    originalProposedSlots: [],
+    isEditingEvent: false,
 };
 
 const eventReducer = (state, action) => {
@@ -36,7 +36,6 @@ const eventReducer = (state, action) => {
                 )
             };
         case "LOAD_EVENT":
-            // Save original proposed slots when loading an event
             const loadedData = action.payload;
             return {
                 ...state,

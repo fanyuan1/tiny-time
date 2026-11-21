@@ -15,20 +15,19 @@ import { Loader2, Share2, Check, Calendar, Link as LinkIcon, MapPin, Clock, Penc
 import { format, addMinutes } from "date-fns";
 import Confirmation from "./Confirmation";
 
-// Keeps primary actions in thumb reach on phones; plain flow on larger screens.
 const STICKY_ACTIONS = "sticky bottom-0 z-10 -mx-4 -mb-[calc(env(safe-area-inset-bottom)+1.5rem)] sm:mb-0 px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] bg-white/85 backdrop-blur-md border-t border-slate-200/70 sm:static sm:mx-0 sm:p-0 sm:bg-transparent sm:backdrop-blur-none sm:border-0";
 
 export default function Home() {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const eventId = searchParams.get("eventId");
-    const urlMode = searchParams.get("mode"); // Move to top level
+    const urlMode = searchParams.get("mode");
     const { state, dispatch } = useEvent();
     const [loading, setLoading] = useState(!!eventId);
     const [shareUrl, setShareUrl] = useState("");
     const [copied, setCopied] = useState(false);
-    const [proposalSlots, setProposalSlots] = useState([]); // Moved to top level for React Hooks rules
-    const [prefillKey, setPrefillKey] = useState(0); // Remounts EventForm after share-target prefill
+    const [proposalSlots, setProposalSlots] = useState([]);
+    const [prefillKey, setPrefillKey] = useState(0);
 
     useEffect(() => {
         if (eventId) {
@@ -39,24 +38,19 @@ export default function Home() {
                     if (event) {
                         saveMyEvent(event, "guest");
                         if (urlMode === "edit") {
-                            // Load event in edit mode
                             dispatch({ type: "LOAD_EVENT", payload: { eventData: event, selectedSlots: event.proposedSlots || [], mode: "edit_event" } });
                         } else if (event.status === 'confirmed') {
-                            // Check if event is confirmed - if so, render confirmation view
                             dispatch({ type: "LOAD_EVENT", payload: { eventData: event, selectedSlots: event.proposedSlots || [], mode: "confirmed_view" } });
                         } else {
-                            // Normal flow for pending/negotiating events
                             dispatch({ type: "LOAD_EVENT", payload: { eventData: event, selectedSlots: event.proposedSlots || [], mode: "view" } });
                         }
                     } else {
-                        // Handle not found - set mode to create and show error
                         console.error("Event not found:", eventId);
                         dispatch({ type: "SET_MODE", payload: "create" });
                         alert("Event not found!");
                     }
                 } catch (error) {
                     console.error("Failed to load event", error);
-                    // On error, go back to create mode
                     dispatch({ type: "SET_MODE", payload: "create" });
                     alert("Failed to load event. Please try again.");
                 } finally {
@@ -65,7 +59,6 @@ export default function Home() {
             };
             loadEvent();
         } else {
-            // Content shared into the installed app via the manifest share_target.
             const shared = ["title", "text", "url"].map((k) => searchParams.get(k)).filter(Boolean).join(" ");
             if (shared) {
                 const linkedEventId = shared.match(/[?&]eventId=([\w-]+)/)?.[1];
@@ -81,7 +74,6 @@ export default function Home() {
                 setPrefillKey((k) => k + 1);
                 navigate("/", { replace: true });
             }
-            // No eventId, ensure we're in create mode and not loading
             dispatch({ type: "SET_MODE", payload: "create" });
             setLoading(false);
         }
@@ -95,14 +87,12 @@ export default function Home() {
     const handlePublish = async () => {
         setLoading(true);
         try {
-            // Ensure duration is set, default to 30 if missing
             const duration = state.eventData.duration || 30;
 
             const eventPayload = {
                 ...state.eventData,
                 proposedSlots: state.selectedSlots,
                 duration: duration,
-                // settings removed
             };
 
             const newEventId = await createEvent(eventPayload);
@@ -112,7 +102,7 @@ export default function Home() {
             dispatch({ type: "SET_MODE", payload: "share" });
         } catch (error) {
             console.error("Failed to create event", error);
-            alert("Failed to create event. Please try again."); // Simple user feedback
+            alert("Failed to create event. Please try again.");
         } finally {
             setLoading(false);
         }
@@ -136,13 +126,10 @@ export default function Home() {
         );
     }
 
-    // --- CONFIRMED EVENT VIEW ---
-    // Render the Confirmation component directly when the event is confirmed
     if (state.mode === "confirmed_view") {
         return <Confirmation eventData={state.eventData} />;
     }
 
-    // --- HOST FLOW: STEP 2 (SELECT TIMES) ---
     if (state.mode === "pick_time") {
         return (
             <div className="w-full max-w-3xl mx-auto space-y-6">
@@ -160,12 +147,11 @@ export default function Home() {
                             dispatch({ type: "UPDATE_EVENT_DATA", payload: { duration } });
                         }
                     }}
-                    busySlots={[]} // Removed sync logic
+                    busySlots={[]}
 
                 />
 
                 <div className={`flex flex-row-reverse gap-2 ${STICKY_ACTIONS}`}>
-                    {/* Sync Calendar Button Removed */}
 
 
                     <Button
@@ -184,7 +170,6 @@ export default function Home() {
         );
     }
 
-    // --- HOST FLOW: STEP 3 (SHARE) ---
     if (state.mode === "share") {
         return (
             <Card className="w-full max-w-3xl mx-auto text-center">
@@ -222,9 +207,7 @@ export default function Home() {
         );
     }
 
-    // --- GUEST FLOW (VIEW) ---
     if (state.mode === "view") {
-        // Safety check: ensure eventData exists
         if (!state.eventData || !state.eventData.title) {
             return (
                 <div className="text-center p-8">
@@ -234,7 +217,6 @@ export default function Home() {
         }
 
         const isNegotiating = state.eventData.status === "negotiating";
-        // Always show the event's proposedSlots (which were set from state.selectedSlots on load)
         const slotsToShow = state.selectedSlots || [];
 
         return (
@@ -258,7 +240,6 @@ export default function Home() {
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => {
-                                        // Navigate to edit mode instead of inline editing
                                         dispatch({ type: "SET_MODE", payload: "edit_event" });
                                     }}
                                 >
@@ -312,7 +293,6 @@ export default function Home() {
                         {isNegotiating ? "Select a Time" : "Select a Time"}
                     </h3>
 
-                    {/* Scrollable time slots container */}
                     <div className="sm:max-h-96 sm:overflow-y-auto grid grid-cols-1 gap-2 sm:pr-2">
                         {slotsToShow.map((slot, i) => (
                             <Button
@@ -321,9 +301,6 @@ export default function Home() {
                                 className="justify-between h-auto py-3 hover:bg-blue-50 hover:border-blue-200 border-l-4 border-l-blue-600"
                                 onClick={() => {
                                     dispatch({ type: "SET_SLOTS", payload: [slot] });
-                                    // Determine who should enter their email
-                                    // If negotiating, it's the Host confirming.
-                                    // If not negotiating (pending), it's the Guest confirming.
                                     dispatch({ type: "UPDATE_EVENT_DATA", payload: { guestEmail: state.eventData.guestEmail || "" } });
                                     dispatch({ type: "SET_MODE", payload: "confirm_booking" });
                                 }}
@@ -341,7 +318,6 @@ export default function Home() {
                         ))}
                     </div>
 
-                    {/* Reject / Create New Invite Button for Host during Negotiation */}
                     {isNegotiating && (
                         <div className="pt-4 space-y-2">
                             <p className="text-sm text-muted-foreground text-center">
@@ -351,8 +327,6 @@ export default function Home() {
                                 variant="outline"
                                 className="w-full bg-gray-50 hover:bg-gray-100"
                                 onClick={() => {
-                                    // Redirect to create new event (effectively rejecting)
-                                    // We could update status to 'closed' here if we want to track it
                                     if (confirm("This will start a new invite. Proceed?")) {
                                         navigate("/");
                                     }
@@ -363,7 +337,6 @@ export default function Home() {
                         </div>
                     )}
 
-                    {/* Propose New Times (only if NOT negotiating - single round) */}
                     {!isNegotiating && (
                         <div className="pt-4 space-y-2">
                             <p className="text-sm text-muted-foreground text-center">
@@ -373,8 +346,6 @@ export default function Home() {
                                 variant="outline"
                                 className="w-full bg-gray-50 hover:bg-gray-100"
                                 onClick={() => {
-                                    // Clear slots for proposal but don't lose them in state if we need to go back
-                                    // We'll handle empty slots in the propose_time mode
                                     dispatch({ type: "SET_MODE", payload: "propose_time" });
                                 }}
                             >
@@ -387,18 +358,11 @@ export default function Home() {
         );
     }
 
-    // --- GUEST FLOW (CONFIRM BOOKING) ---
     if (state.mode === "confirm_booking") {
         const slot = state.selectedSlots[0];
         const isNegotiating = state.eventData.status === "negotiating";
         const hostEmail = state.eventData.hostEmail;
-        // attendeeEmail removed
 
-
-        // Simplified confirmation logic
-        // We just need the user to confirm their email.
-        // If it's the guest confirming, we use guestEmail.
-        // If it's the host confirming (negotiation), we use hostEmail.
 
         const confirmingEmail = isNegotiating ? hostEmail : (state.eventData.guestEmail || "");
 
@@ -429,7 +393,6 @@ export default function Home() {
                             title="Please enter a valid email address"
                             value={confirmingEmail || ""}
                             onChange={(e) => {
-                                // Update the appropriate email field
                                 if (isNegotiating) {
                                     dispatch({ type: "UPDATE_EVENT_DATA", payload: { hostEmail: e.target.value } });
                                 } else {
@@ -447,9 +410,6 @@ export default function Home() {
                             className="w-full"
                             disabled={!confirmingEmail}
                             onClick={async () => {
-                                // Validate: Check if same person who proposed is trying to confirm
-                                // Simplified: If negotiating, Host confirms. If not, Guest confirms.
-                                // We trust the user entered the correct email for now.
 
 
 
@@ -457,7 +417,6 @@ export default function Home() {
                                 try {
                                     await updateEventStatus(state.eventData.id, "confirmed", slot, confirmingEmail);
 
-                                    // Force page reload to fetch updated event data with confirmed status
                                     window.location.href = `/?eventId=${state.eventData.id}`;
                                 } catch (e) {
                                     console.error(e);
@@ -472,7 +431,6 @@ export default function Home() {
                             variant="ghost"
                             className="w-full"
                             onClick={() => {
-                                // Restore original proposed slots when going back
                                 dispatch({ type: "SET_SLOTS", payload: state.originalProposedSlots });
                                 dispatch({ type: "SET_MODE", payload: "view" });
                             }}
@@ -485,9 +443,7 @@ export default function Home() {
         );
     }
 
-    // --- GUEST FLOW (PROPOSE TIME) ---
     if (state.mode === "propose_time") {
-        // Guest is proposing.
         const proposerEmail = state.eventData.guestEmail || "";
 
         return (
@@ -510,7 +466,6 @@ export default function Home() {
                 />
 
                 <div className="flex flex-col gap-3">
-                    {/* Email Input - Always editable, pre-filled smartly */}
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-700">Your Email</label>
                         <Input
@@ -541,7 +496,7 @@ export default function Home() {
                                     state.eventData.id,
                                     proposalSlots,
                                     proposerEmail,
-                                    state.eventData.duration // Pass duration
+                                    state.eventData.duration
                                 );
                                 saveMyEvent({ id: state.eventData.id, status: "negotiating" }, "guest");
                                 dispatch({ type: "SET_MODE", payload: "proposal_sent" });
@@ -580,7 +535,6 @@ export default function Home() {
                 <CardContent className="space-y-4">
                     <p className="text-gray-600">The host has been notified of your proposed times.</p>
 
-                    {/* Shareable link */}
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-700">Share this event</label>
                         <div className="flex items-center gap-2">
@@ -613,11 +567,7 @@ export default function Home() {
         );
     }
 
-    // --- WAITING FOR RESPONSE (Not You? clicked) ---
     if (state.mode === "waiting_response") {
-        // Simplified: If negotiating, waiting for Host. If pending, waiting for Guest.
-        // But actually this screen might not be reachable or needed in the new flow as much.
-        // Keeping it simple.
         const waitingFor = state.eventData.status === "negotiating" ? "host" : "guest";
 
         return (
@@ -635,7 +585,6 @@ export default function Home() {
                     <Button
                         className="w-full"
                         onClick={() => {
-                            // Restore original proposed slots when going back
                             dispatch({ type: "SET_SLOTS", payload: state.originalProposedSlots });
                             dispatch({ type: "SET_MODE", payload: "view" });
                         }}
@@ -647,7 +596,6 @@ export default function Home() {
         );
     }
 
-    // --- HOST FLOW: STEP 1 (CREATE EVENT FORM) ---
     if (state.mode === "create" || state.mode === "edit_event") {
         const isEditing = state.mode === "edit_event";
 
@@ -676,16 +624,12 @@ export default function Home() {
                             key={prefillKey}
                             onSubmit={async (data) => {
                                 if (isEditing) {
-                                    // Update existing event in database
                                     setLoading(true);
                                     try {
                                         await updateEventDetails(state.eventData.id, data);
-                                        // Update local state
                                         dispatch({ type: "UPDATE_EVENT_DATA", payload: data });
                                         
-                                        // Return to appropriate view based on event status
                                         if (state.eventData.status === 'confirmed') {
-                                            // Navigate to clean URL without mode parameter
                                             navigate(`/?eventId=${state.eventData.id}`);
                                         } else {
                                             dispatch({ type: "SET_MODE", payload: "view" });
@@ -697,7 +641,6 @@ export default function Home() {
                                         setLoading(false);
                                     }
                                 } else {
-                                    // Create new event
                                     handleCreateEvent(data);
                                 }
                             }}
@@ -708,9 +651,7 @@ export default function Home() {
                             <Button
                                 variant="ghost"
                                 onClick={() => {
-                                    // Return to appropriate view based on event status
                                     if (state.eventData.status === 'confirmed') {
-                                        // Navigate to clean URL without mode parameter
                                         navigate(`/?eventId=${state.eventData.id}`);
                                     } else {
                                         dispatch({ type: "SET_MODE", payload: "view" });

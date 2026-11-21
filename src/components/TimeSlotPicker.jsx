@@ -29,7 +29,6 @@ export const TimeSlotPicker = ({
     const [duration, setDuration] = useState(initialDuration);
     const [hasAutoFocused, setHasAutoFocused] = useState(false);
 
-    // Auto-focus the calendar on the first selected slot if available (only once)
     useEffect(() => {
         if (selectedSlots.length > 0 && !hasAutoFocused) {
             const firstSlotDate = new Date(selectedSlots[0].start);
@@ -39,26 +38,22 @@ export const TimeSlotPicker = ({
         }
     }, [selectedSlots, hasAutoFocused]);
 
-    // Generate calendar days
     const daysInMonth = eachDayOfInterval({
         start: startOfMonth(currentMonth),
         end: endOfMonth(currentMonth)
     });
 
-    // Calculate padding days for proper calendar alignment
     const firstDayOfMonth = startOfMonth(currentMonth);
-    const paddingDays = firstDayOfMonth.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const paddingDays = firstDayOfMonth.getDay();
 
-    // Generate time slots for the selected date (8am - 6pm)
     const generateTimeSlots = (date) => {
         const slots = [];
-        const start = setMinutes(setHours(date, 8), 0); // 8:00 AM
-        const end = setMinutes(setHours(date, 18), 0);   // 6:00 PM
+        const start = setMinutes(setHours(date, 8), 0);
+        const end = setMinutes(setHours(date, 18), 0);
         const now = new Date();
 
         let currentTime = start;
         while (isBefore(currentTime, end)) {
-            // Only include future time slots if the selected date is today
             if (isSameDay(date, now)) {
                 if (currentTime > now) {
                     slots.push(currentTime);
@@ -66,7 +61,7 @@ export const TimeSlotPicker = ({
             } else {
                 slots.push(currentTime);
             }
-            currentTime = addMinutes(currentTime, 30); // Always 30 min intervals
+            currentTime = addMinutes(currentTime, 30);
         }
         return slots;
     };
@@ -91,13 +86,11 @@ export const TimeSlotPicker = ({
 
         const timeStr = time.toISOString();
 
-        // Toggle selection
         const exists = isSelected(time);
         let newSlots;
         if (exists) {
             newSlots = selectedSlots.filter(s => s.start !== timeStr);
         } else {
-            // Store just the start time. Duration is managed globally.
             newSlots = [...selectedSlots, { start: timeStr }];
         }
         onChange(newSlots, duration);
@@ -105,7 +98,6 @@ export const TimeSlotPicker = ({
 
     return (
         <div className="w-full max-w-4xl mx-auto rounded-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2 border border-slate-200/70 bg-white shadow-[0_1px_2px_rgb(15_23_42/0.04),0_12px_32px_-12px_rgb(30_58_138/0.15)]">
-            {/* Left Panel: Calendar & Duration */}
             <Card className="rounded-none border-0 border-b md:border-b-0 md:border-r shadow-none bg-white backdrop-blur-none">
                 <CardHeader className="space-y-6">
                     {!readOnly && (
@@ -123,7 +115,6 @@ export const TimeSlotPicker = ({
                                 onChange={(e) => {
                                     const val = parseInt(e.target.value) || 30;
                                     setDuration(val);
-                                    // Just pass the new duration, slots don't need to change
                                     onChange(selectedSlots, val);
                                 }}
                                 className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
@@ -155,7 +146,6 @@ export const TimeSlotPicker = ({
                             {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map(d => (
                                 <div key={d} className="text-muted-foreground py-1 font-medium">{d}</div>
                             ))}
-                            {/* Padding cells to align the first day of month with correct day-of-week */}
                             {Array.from({ length: paddingDays }).map((_, i) => (
                                 <div key={`padding-${i}`} className="w-10 h-10 sm:w-9 sm:h-9" />
                             ))}
@@ -192,7 +182,6 @@ export const TimeSlotPicker = ({
                 </CardHeader>
             </Card>
 
-            {/* Right Panel: Time Slots */}
             <Card className="rounded-none border-0 shadow-none bg-slate-50/80 backdrop-blur-none">
                 <CardHeader className="pb-3">
                     <CardTitle className="text-base">Choose start time ({duration} min duration)</CardTitle>
@@ -200,7 +189,6 @@ export const TimeSlotPicker = ({
 
                 </CardHeader>
                 <CardContent className="flex flex-col">
-                    {/* Added px-2 to fix left edge cut off when scaled */}
                     <div className="grid grid-cols-3 gap-2 md:grid-cols-1 md:overflow-y-auto md:max-h-[450px] md:px-2 custom-scrollbar">
                         {timeSlots.length === 0 && (
                             <p className="col-span-full py-6 text-center text-sm text-muted-foreground">

@@ -6,24 +6,16 @@ const { getMessaging } = require("firebase-admin/messaging");
 const { defineString } = require("firebase-functions/params");
 const { Resend } = require("resend");
 
-// Define the API key parameter
-// This will be prompted for during deployment if not set
 const resendKeyParam = defineString("RESEND_KEY");
 
-/**
- * HTTP Cloud Function to send emails
- * Endpoint: https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/sendEmail
- */
 exports.sendEmail = onRequest({
     cors: true,
     invoker: "public",
 }, async (req, res) => {
-    // Only allow POST requests
     if (req.method !== "POST") {
         return res.status(405).json({ error: "Method not allowed" });
     }
 
-    // Initialize Resend with the parameter value
     const apiKey = resendKeyParam.value();
     if (!apiKey) {
         console.error("Resend API key not configured!");
@@ -36,7 +28,6 @@ exports.sendEmail = onRequest({
     try {
         const { to, cc, subject, html } = req.body;
 
-        // Validate required fields
         if (!to || !subject || !html) {
             return res.status(400).json({
                 error: "Missing required fields: to, subject, html",
@@ -47,7 +38,6 @@ exports.sendEmail = onRequest({
         if (cc) console.log("CC:", cc);
         console.log("Subject:", subject);
 
-        // Send email using Resend
         const payload = {
             from: "noreply@notifications.engsight.app",
             to: Array.isArray(to) ? to : [to],
@@ -79,10 +69,6 @@ const DEAD_TOKEN_CODES = [
     "messaging/invalid-registration-token",
 ];
 
-/**
- * Push-notifies whoever is waiting on the other party.
- * Tokens are stored on the event by the client when a user taps "Notify me".
- */
 exports.pushNotify = onDocumentUpdated("events/{eventId}", async (event) => {
     const before = event.data.before.data();
     const after = event.data.after.data();
@@ -95,7 +81,6 @@ exports.pushNotify = onDocumentUpdated("events/{eventId}", async (event) => {
         field = "hostPushTokens";
         title = "New times proposed";
     } else if (after.status === "confirmed") {
-        // Whoever confirmed already knows; tell the other side.
         field = before.status === "negotiating" ?
             "guestPushTokens" : "hostPushTokens";
         title = "Playdate confirmed!";
@@ -106,7 +91,6 @@ exports.pushNotify = onDocumentUpdated("events/{eventId}", async (event) => {
     const tokens = after[field] || [];
     if (tokens.length === 0) return;
 
-    // Data-only so public/sw.js controls how the notification looks.
     const res = await getMessaging().sendEachForMulticast({
         tokens,
         data: {

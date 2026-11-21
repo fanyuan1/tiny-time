@@ -1,0 +1,7 @@
+{
+  "public/sw.js": {
+    "dev-kit/no-comments": {
+      "count": 1
+    }
+  }
+}

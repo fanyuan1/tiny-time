@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/Card";
 import { Badge } from "./ui/Badge";
 import { getMyEvents } from "@/lib/myEvents";
 
-// Status is a snapshot from the last time the event was opened on this device.
 const STATUS_LABEL = { pending: "Pending", negotiating: "New times proposed", confirmed: "Confirmed" };
 
 export const MyEventsList = () => {

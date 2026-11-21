@@ -28,8 +28,6 @@ export const EventForm = ({ onSubmit, initialData = {}, isEditing = false }) => 
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        // The Places autocomplete widget isn't a native form control, so
-        // validate the location manually.
         if (!formData.location.trim()) {
             setLocationError(true);
             return;

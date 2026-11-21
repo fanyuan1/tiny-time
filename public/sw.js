@@ -1,4 +1,3 @@
-// Bump to drop old caches on deploy.
 const CACHE = 'tinytime-v6'
 const SHELL = ['/', '/manifest.webmanifest', '/favicon.svg', '/pwa-192.png']
 
@@ -18,10 +17,8 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const { request } = event
     const url = new URL(request.url)
-    // Firestore, Functions etc. must always hit the network.
     if (request.method !== 'GET' || url.origin !== self.location.origin) return
 
-    // Network-first for pages so deploys show up immediately; cached shell when offline.
     if (request.mode === 'navigate') {
         event.respondWith(
             fetch(request)
@@ -35,7 +32,6 @@ self.addEventListener('fetch', (event) => {
         return
     }
 
-    // Vite assets are content-hashed, so cache-first is safe.
     event.respondWith(
         caches.match(request).then((hit) => hit || fetch(request).then((res) => {
             if (res.ok) {
@@ -47,7 +43,6 @@ self.addEventListener('fetch', (event) => {
     )
 })
 
-// Sent as FCM data-only messages by the pushNotify Cloud Function.
 self.addEventListener('push', (event) => {
     let payload = {}
     try { payload = event.data.json() } catch { /* not JSON, show defaults */ }

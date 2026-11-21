@@ -39,7 +39,6 @@ export default function Confirmation({ eventData }) {
     };
 
     const handleEdit = () => {
-        // Navigate to edit mode with the event ID
         navigate(`/?eventId=${eventId}&mode=edit`);
     };
 
@@ -52,7 +51,7 @@ export default function Confirmation({ eventData }) {
         startTime = new Date(event.confirmedSlot.start);
         if (isNaN(startTime.getTime())) {
             console.error("Invalid start time:", event.confirmedSlot.start);
-            startTime = new Date(); // Fallback
+            startTime = new Date();
         }
         endTime = addMinutes(startTime, event.duration || 30);
     } catch (e) {
@@ -61,20 +60,15 @@ export default function Confirmation({ eventData }) {
         endTime = addMinutes(startTime, 30);
     }
 
-    // Format dates for calendar URLs
     const startISO = startTime.toISOString().replace(/-|:|\.\d+/g, "");
     const endISO = endTime.toISOString().replace(/-|:|\.\d+/g, "");
 
-    // Build attendees list for calendar URLs
     const attendees = [event.hostEmail, event.guestEmail].filter(Boolean).join(',');
 
-    // Google Calendar URL with both attendees
     const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&dates=${startISO}/${endISO}&details=${encodeURIComponent(event.description || '')}&location=${encodeURIComponent(event.location || '')}&add=${encodeURIComponent(attendees)}`;
 
-    // Outlook Calendar URL with both attendees
     const outlookCalendarUrl = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${encodeURIComponent(event.title)}&body=${encodeURIComponent(event.description || '')}&location=${encodeURIComponent(event.location || '')}&startdt=${startTime.toISOString()}&enddt=${endTime.toISOString()}&to=${encodeURIComponent(attendees)}`;
 
-    // iCal/Apple Calendar - Uses the ICS download
     const handleICalDownload = () => {
         if (event) {
             downloadICS(event);
@@ -91,7 +85,6 @@ export default function Confirmation({ eventData }) {
                     <CardTitle className="text-green-700">Playdate Confirmed!</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    {/* Event Details Card */}
                     <div className="relative bg-gray-50 border border-gray-200 rounded-lg p-4">
                         <div className="absolute top-2 right-2 flex gap-1">
                             <Button
