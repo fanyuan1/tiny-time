@@ -34,7 +34,7 @@
     "eslint": "^10.15.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.6.1",
-    "lints": "github:fanyuan1/lints",
+    "lints": "github:fanyuan1/lints#v0.4.1",
     "postcss": "^8.4.49",
     "tailwindcss": "^4.3.3",
     "vite": "^6.0.5"
