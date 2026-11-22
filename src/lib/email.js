@@ -8,7 +8,7 @@ const FROM_EMAIL = 'noreply@notifications.engsight.app'
 
 const CLOUD_FUNCTION_URL = import.meta.env.VITE_CLOUD_FUNCTION_URL || 'https://us-central1-tiny-time-9000.cloudfunctions.net/sendEmail';
 
-export const sendEmail = async (to, subject, htmlContent, cc = null) => {
+const sendEmail = async (to, subject, htmlContent, cc = null) => {
     try {
         console.log('📧 Sending email via Cloud Function...');
         console.log('To:', to);

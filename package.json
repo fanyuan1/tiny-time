@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "prepare": "husky",
     "lint:comments": "eslint .",
-    "check": "npm run lint:comments && npm run build && npm --prefix functions run lint"
+    "check": "npm run lint:comments && npm run knip && npm run build && npm --prefix functions run lint",
+    "knip": "knip"
   },
   "dependencies": {
     "@radix-ui/react-label": "^2.1.1",
@@ -23,7 +24,6 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.1.1",
-    "resend": "^6.5.2",
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
@@ -33,8 +33,9 @@
     "@vitejs/plugin-react": "^4.3.4",
     "eslint": "^10.15.0",
     "husky": "^9.1.7",
+    "knip": "^6.47.0",
     "lint-staged": "^17.6.1",
-    "lints": "github:fanyuan1/lints#v0.4.1",
+    "lints": "github:fanyuan1/lints#v0.5.1",
     "postcss": "^8.4.49",
     "tailwindcss": "^4.3.3",
     "vite": "^6.0.5"

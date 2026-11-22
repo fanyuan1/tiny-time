@@ -4,6 +4,7 @@ const { initializeApp } = require("firebase-admin/app");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const { getMessaging } = require("firebase-admin/messaging");
 const { defineString } = require("firebase-functions/params");
+const { logger } = require("firebase-functions");
 const { Resend } = require("resend");
 
 const resendKeyParam = defineString("RESEND_KEY");
@@ -34,9 +35,9 @@ exports.sendEmail = onRequest({
             });
         }
 
-        console.log("Sending email to:", to);
-        if (cc) console.log("CC:", cc);
-        console.log("Subject:", subject);
+        logger.info("Sending email to:", to);
+        if (cc) logger.info("CC:", cc);
+        logger.info("Subject:", subject);
 
         const payload = {
             from: "noreply@notifications.engsight.app",
@@ -51,7 +52,7 @@ exports.sendEmail = onRequest({
 
         const data = await resend.emails.send(payload);
 
-        console.log("Email sent successfully:", data);
+        logger.info("Email sent successfully:", data);
         return res.status(200).json({ success: true, data });
     } catch (error) {
         console.error("Error sending email:", error);

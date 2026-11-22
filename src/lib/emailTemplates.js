@@ -1,6 +1,6 @@
 import { format, addMinutes } from "date-fns";
 
-export const getEmailLayout = (content) => {
+const getEmailLayout = (content) => {
     return `
 <!DOCTYPE html>
 <html lang="en">
@@ -116,36 +116,6 @@ export const getEmailLayout = (content) => {
 `;
 };
 
-export const hostEventCreatedTemplate = (event, shareUrl) => {
-    const content = `
-        <h1 class="title">🎉 Your Event is Ready!</h1>
-        <p class="subtitle">You've successfully created a playdate invitation.</p>
-        
-        <div class="info-box">
-            <p><span class="info-label">Event:</span> ${event.title}</p>
-            <p><span class="info-label">Location:</span> ${event.location || 'TBD'}</p>
-            ${event.description ? `<p><span class="info-label">Description:</span> ${event.description}</p>` : ''}
-            <p><span class="info-label">Host:</span> ${event.hostEmail}</p>
-            ${event.guestEmail ? `<p><span class="info-label">Guest:</span> ${event.guestEmail}</p>` : ''}
-        </div>
-
-        <p>Share this link with your guest so they can pick a time that works:</p>
-        
-        <div style="text-align: center;">
-            <a href="${shareUrl}" class="button">View Event</a>
-        </div>
-
-        <div class="divider"></div>
-
-        <p style="font-size: 14px; color: #6B7280;">
-            <strong>Link to share:</strong><br>
-            <a href="${shareUrl}" style="color: #2563EB; word-break: break-all;">${shareUrl}</a>
-        </p>
-    `;
-
-    return getEmailLayout(content);
-};
-
 export const guestInviteTemplate = (event, shareUrl) => {
     const content = `
         <h1 class="title">📅 You're Invited!</h1>
@@ -190,27 +160,6 @@ export const hostProposalTemplate = (event) => {
         <div style="text-align: center;">
             <a href="${eventUrl}" class="button">Review Proposed Times</a>
         </div>
-    `;
-
-    return getEmailLayout(content);
-};
-
-export const guestProposalSentTemplate = (event) => {
-    const content = `
-        <h1 class="title">✅ Proposal Sent!</h1>
-        <p class="subtitle">Your time proposal has been sent to ${event.hostEmail}.</p>
-        
-        <div class="info-box">
-            <p><span class="info-label">Event:</span> ${event.title}</p>
-            <p><span class="info-label">Location:</span> ${event.location || 'TBD'}</p>
-            <p><span class="info-label">Host:</span> ${event.hostEmail}</p>
-        </div>
-
-        <p>The host will review your proposed times and confirm a time that works for both of you. You'll receive an email notification once they respond.</p>
-        
-        <p style="font-size: 14px; color: #6B7280; margin-top: 24px;">
-            Thank you for your flexibility in finding a time that works!
-        </p>
     `;
 
     return getEmailLayout(content);

@@ -1,6 +1,6 @@
 import { format, addMinutes } from "date-fns";
 
-export const generateICS = (event) => {
+const generateICS = (event) => {
     const { title, description, location, confirmedSlot, hostEmail, guestEmail, duration } = event;
 
     if (!confirmedSlot) return "";
