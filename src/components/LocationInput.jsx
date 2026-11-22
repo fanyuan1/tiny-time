@@ -42,20 +42,36 @@ const loadPlacesLibrary = (apiKey) => {
     return placesLibraryPromise;
 };
 
-export const LocationInput = ({
-    value,
-    onChange,
-    placeholder,
-    id,
-    name,
-    required,
-    ...props
-}) => {
-    const containerRef = useRef(null);
+const formatPlace = (displayName, address) => {
+    if (displayName && address) return `${displayName}, ${address}`;
+    return address || displayName || "";
+};
+
+const resolvePlaceText = async (place) => {
+    await place.fetchFields({ fields: ["displayName", "formattedAddress"] });
+    return formatPlace(place.displayName, place.formattedAddress);
+};
+
+const createAutocomplete = (places, { id, placeholder, onPlace }) => {
+    const { PlaceAutocompleteElement } = places;
+    if (!PlaceAutocompleteElement) {
+        throw new Error("PlaceAutocompleteElement unavailable — enable 'Places API (New)'");
+    }
+    const el = new PlaceAutocompleteElement();
+    if (id) el.id = id;
+    if (placeholder) el.placeholder = placeholder;
+    el.addEventListener("gmp-select", ({ placePrediction }) => {
+        onPlace(placePrediction?.toPlace?.());
+    });
+    el.addEventListener("gmp-placeselect", ({ place }) => {
+        onPlace(place);
+    });
+    return el;
+};
+
+const usePlacesAutocomplete = ({ id, placeholder, onChange, containerRef, setStatus, setPicked }) => {
     const elementRef = useRef(null);
     const onChangeRef = useRef(onChange);
-    const [status, setStatus] = useState("loading");
-    const [picked, setPicked] = useState(false);
 
     useEffect(() => {
         onChangeRef.current = onChange;
@@ -64,9 +80,7 @@ export const LocationInput = ({
     useEffect(() => {
         const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
         if (!apiKey) {
-            console.warn(
-                "Google Maps API key not found. Location input will work as plain text."
-            );
+            console.warn("Google Maps API key not found. Location input will work as plain text.");
             setStatus("fallback");
             return;
         }
@@ -76,14 +90,7 @@ export const LocationInput = ({
         const commitPlace = async (place) => {
             if (!place) return;
             try {
-                await place.fetchFields({
-                    fields: ["displayName", "formattedAddress"],
-                });
-                const displayName = place.displayName;
-                const address = place.formattedAddress;
-                let next = "";
-                if (displayName && address) next = `${displayName}, ${address}`;
-                else next = address || displayName || "";
+                const next = await resolvePlaceText(place);
                 if (next) {
                     setPicked(true);
                     onChangeRef.current(next);
@@ -96,33 +103,12 @@ export const LocationInput = ({
         loadPlacesLibrary(apiKey)
             .then((places) => {
                 if (cancelled) return;
-                const { PlaceAutocompleteElement } = places;
-                if (!PlaceAutocompleteElement) {
-                    throw new Error(
-                        "PlaceAutocompleteElement unavailable — enable 'Places API (New)'"
-                    );
-                }
-
-                const el = new PlaceAutocompleteElement();
-                if (id) el.id = id;
-                if (placeholder) el.placeholder = placeholder;
-
-                el.addEventListener("gmp-select", ({ placePrediction }) => {
-                    commitPlace(placePrediction?.toPlace?.());
-                });
-                el.addEventListener("gmp-placeselect", ({ place }) => {
-                    commitPlace(place);
-                });
-
-                elementRef.current = el;
-                containerRef.current?.appendChild(el);
+                elementRef.current = createAutocomplete(places, { id, placeholder, onPlace: commitPlace });
+                containerRef.current?.appendChild(elementRef.current);
                 setStatus("ready");
             })
             .catch((err) => {
-                console.error(
-                    "Google Places unavailable, falling back to text input:",
-                    err
-                );
+                console.error("Google Places unavailable, falling back to text input:", err);
                 if (!cancelled) setStatus("fallback");
             });
 
@@ -131,7 +117,23 @@ export const LocationInput = ({
             elementRef.current?.remove();
             elementRef.current = null;
         };
-    }, [id, placeholder]);
+    }, [id, placeholder, containerRef, setStatus, setPicked]);
+};
+
+export const LocationInput = ({
+    value,
+    onChange,
+    placeholder,
+    id,
+    name,
+    required,
+    ...props
+}) => {
+    const containerRef = useRef(null);
+    const [status, setStatus] = useState("loading");
+    const [picked, setPicked] = useState(false);
+
+    usePlacesAutocomplete({ id, placeholder, onChange, containerRef, setStatus, setPicked });
 
     if (status === "fallback") {
         return (

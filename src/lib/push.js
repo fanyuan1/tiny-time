@@ -4,7 +4,7 @@ const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
 
 export const pushSupported = () =>
     import.meta.env.PROD &&
-    !!VAPID_KEY &&
+    Boolean(VAPID_KEY) &&
     "serviceWorker" in navigator &&
     "PushManager" in window &&
     "Notification" in window;

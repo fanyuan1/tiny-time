@@ -1,0 +1,1 @@
+export const STICKY_ACTIONS = "sticky bottom-0 z-10 -mx-4 -mb-[calc(env(safe-area-inset-bottom)+1.5rem)] sm:mb-0 px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] bg-white/85 backdrop-blur-md border-t border-slate-200/70 sm:static sm:mx-0 sm:p-0 sm:bg-transparent sm:backdrop-blur-none sm:border-0";

@@ -1,14 +1,6 @@
 import { format, addMinutes } from "date-fns";
 
-const getEmailLayout = (content) => {
-    return `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TinyTime</title>
-    <style>
+const EMAIL_STYLES = `
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             line-height: 1.6;
@@ -95,6 +87,18 @@ const getEmailLayout = (content) => {
             border-top: 1px solid #E5E7EB;
             margin: 24px 0;
         }
+`;
+
+const getEmailLayout = (content) => {
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TinyTime</title>
+    <style>
+${EMAIL_STYLES}
     </style>
 </head>
 <body>

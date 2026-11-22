@@ -10,10 +10,6 @@ const CLOUD_FUNCTION_URL = import.meta.env.VITE_CLOUD_FUNCTION_URL || 'https://u
 
 const sendEmail = async (to, subject, htmlContent, cc = null) => {
     try {
-        console.log('📧 Sending email via Cloud Function...');
-        console.log('To:', to);
-        if (cc) console.log('CC:', cc);
-        console.log('Subject:', subject);
 
         const body = {
             to,
@@ -39,12 +35,10 @@ const sendEmail = async (to, subject, htmlContent, cc = null) => {
         }
 
         const data = await response.json();
-        console.log('✅ Email sent successfully:', data);
         return { success: true, data };
 
     } catch (error) {
         console.error('❌ Failed to send email:', error);
-        console.log('Would have sent:', { to, cc, subject });
         return { success: false, error: error.message };
     }
 };

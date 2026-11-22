@@ -5,6 +5,23 @@ import { Button } from "./ui/Button";
 import { Label } from "./ui/Label";
 import { MapPin, Type, AlignLeft, Mail } from "lucide-react";
 
+function FormField({ id, Icon, label, optional = false, ...inputProps }) {
+    return (
+        <div className="space-y-2">
+            <Label htmlFor={id} className="flex items-center gap-2">
+                <Icon className="w-4 h-4 text-muted-foreground" /> {label}
+                {optional && (
+                    <>
+                        {" "}
+                        <span className="text-muted-foreground font-normal">(Optional)</span>
+                    </>
+                )}
+            </Label>
+            <Input id={id} name={id} {...inputProps} />
+        </div>
+    );
+}
+
 export const EventForm = ({ onSubmit, initialData = {}, isEditing = false }) => {
     const [formData, setFormData] = useState({
         title: initialData.title || "",
@@ -37,49 +54,9 @@ export const EventForm = ({ onSubmit, initialData = {}, isEditing = false }) => 
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-                <Label htmlFor="hostEmail" className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-muted-foreground" /> Host Email
-                </Label>
-                <Input
-                    id="hostEmail"
-                    name="hostEmail"
-                    type="email"
-                    placeholder="parent@example.com"
-                    required
-                    value={formData.hostEmail}
-                    onChange={handleChange}
-                />
-            </div>
-
-            <div className="space-y-2">
-                <Label htmlFor="guestEmail" className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-muted-foreground" /> Guest Email{" "}
-                    <span className="text-muted-foreground font-normal">(Optional)</span>
-                </Label>
-                <Input
-                    id="guestEmail"
-                    name="guestEmail"
-                    type="email"
-                    placeholder="friend@example.com"
-                    value={formData.guestEmail}
-                    onChange={handleChange}
-                />
-            </div>
-
-            <div className="space-y-2">
-                <Label htmlFor="title" className="flex items-center gap-2">
-                    <Type className="w-4 h-4 text-muted-foreground" /> Event Title
-                </Label>
-                <Input
-                    id="title"
-                    name="title"
-                    placeholder="Bike date with Nile x Kai"
-                    required
-                    value={formData.title}
-                    onChange={handleChange}
-                />
-            </div>
+            <FormField id="hostEmail" Icon={Mail} label="Host Email" type="email" placeholder="parent@example.com" required value={formData.hostEmail} onChange={handleChange} />
+            <FormField id="guestEmail" Icon={Mail} label="Guest Email" optional type="email" placeholder="friend@example.com" value={formData.guestEmail} onChange={handleChange} />
+            <FormField id="title" Icon={Type} label="Event Title" placeholder="Bike date with Nile x Kai" required value={formData.title} onChange={handleChange} />
 
             <div className="space-y-2">
                 <Label htmlFor="location" className="flex items-center gap-2">
@@ -98,19 +75,7 @@ export const EventForm = ({ onSubmit, initialData = {}, isEditing = false }) => 
                 )}
             </div>
 
-            <div className="space-y-2">
-                <Label htmlFor="description" className="flex items-center gap-2">
-                    <AlignLeft className="w-4 h-4 text-muted-foreground" /> Description{" "}
-                    <span className="text-muted-foreground font-normal">(Optional)</span>
-                </Label>
-                <Input
-                    id="description"
-                    name="description"
-                    placeholder="Let's ride bikes and explore the trails!"
-                    value={formData.description}
-                    onChange={handleChange}
-                />
-            </div>
+            <FormField id="description" Icon={AlignLeft} label="Description" optional placeholder="Let's ride bikes and explore the trails!" value={formData.description} onChange={handleChange} />
 
             <Button type="submit" className="w-full" size="lg">
                 {isEditing ? "Save Changes" : "Next: Select Times"}

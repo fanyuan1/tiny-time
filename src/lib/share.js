@@ -1,4 +1,4 @@
-export const canNativeShare = () => typeof navigator !== "undefined" && !!navigator.share;
+export const canNativeShare = () => typeof navigator !== "undefined" && Boolean(navigator.share);
 
 export const nativeShare = async ({ title, text, url }) => {
     try {

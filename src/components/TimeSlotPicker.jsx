@@ -18,6 +18,146 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/Card";
 import { Label } from "./ui/Label";
 import { ChevronLeft, ChevronRight, Clock, Calendar } from "lucide-react";
 
+const generateTimeSlots = (date) => {
+    const slots = [];
+    const start = setMinutes(setHours(date, 8), 0);
+    const end = setMinutes(setHours(date, 18), 0);
+    const now = new Date();
+
+    let currentTime = start;
+    while (isBefore(currentTime, end)) {
+        if (isSameDay(date, now)) {
+            if (currentTime > now) {
+                slots.push(currentTime);
+            }
+        } else {
+            slots.push(currentTime);
+        }
+        currentTime = addMinutes(currentTime, 30);
+    }
+    return slots;
+};
+
+const dayButtonClass = ({ isPastDate, isSelectedDate, isToday }) => {
+    if (isPastDate) return "text-muted-foreground/30 cursor-not-allowed";
+    if (isSelectedDate) return "bg-primary text-primary-foreground font-bold shadow-xs";
+    if (isToday) return "bg-primary/10 text-primary font-semibold border border-primary";
+    return "hover:bg-accent text-foreground";
+};
+
+function DurationSlider({ duration, onChange }) {
+    return (
+        <div className="space-y-3">
+            <Label className="flex items-center gap-2 font-semibold text-lg">
+                <Clock className="w-5 h-5 text-primary" />
+                Duration: <span className="text-primary font-bold">{duration} mins</span>
+            </Label>
+            <input
+                type="range"
+                min="30"
+                max="240"
+                step="30"
+                value={duration}
+                onChange={(e) => onChange(parseInt(e.target.value) || 30)}
+                className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+                <span>30m</span>
+                <span>4h</span>
+            </div>
+        </div>
+    );
+}
+
+function DayButton({ day, selectedDate, hasSlots, onSelect }) {
+    const isSelectedDate = isSameDay(day, selectedDate);
+    const isPastDate = isBefore(startOfDay(day), startOfDay(new Date()));
+    const className = dayButtonClass({ isPastDate, isSelectedDate, isToday: isSameDay(day, new Date()) });
+    return (
+        <button
+            onClick={() => !isPastDate && onSelect(day)}
+            disabled={isPastDate}
+            className={cn("w-10 h-10 sm:w-9 sm:h-9 rounded-full flex items-center justify-center mx-auto transition-all relative text-sm", className)}
+        >
+            {format(day, "d")}
+            {hasSlots && !isSelectedDate && !isPastDate && (
+                <div className="absolute bottom-0.5 w-1 h-1 bg-primary rounded-full" />
+            )}
+        </button>
+    );
+}
+
+function MonthCalendar({ currentMonth, setCurrentMonth, selectedDate, setSelectedDate, hasTimeslotOnDate }) {
+    const daysInMonth = eachDayOfInterval({
+        start: startOfMonth(currentMonth),
+        end: endOfMonth(currentMonth)
+    });
+    const paddingDays = startOfMonth(currentMonth).getDay();
+
+    return (
+        <div className="space-y-4">
+            <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-lg flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-primary" />
+                    {format(currentMonth, "MMMM yyyy")}
+                </h3>
+                <div className="flex gap-1">
+                    <Button variant="ghost" size="icon" onClick={() => setCurrentMonth(prev => addDays(startOfMonth(prev), -1))}>
+                        <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => setCurrentMonth(prev => addDays(endOfMonth(prev), 1))}>
+                        <ChevronRight className="w-4 h-4" />
+                    </Button>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-7 gap-1 text-center text-sm">
+                {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map(d => (
+                    <div key={d} className="text-muted-foreground py-1 font-medium">{d}</div>
+                ))}
+                {Array.from({ length: paddingDays }).map((_, i) => (
+                    <div key={`padding-${i}`} className="w-10 h-10 sm:w-9 sm:h-9" />
+                ))}
+                {daysInMonth.map((day, i) => (
+                    <DayButton key={i} day={day} selectedDate={selectedDate} hasSlots={hasTimeslotOnDate(day)} onSelect={setSelectedDate} />
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function TimeSlotList({ timeSlots, isSelected, readOnly, onTimeClick }) {
+    return (
+        <div className="grid grid-cols-3 gap-2 md:grid-cols-1 md:overflow-y-auto md:max-h-[450px] md:px-2 custom-scrollbar">
+            {timeSlots.length === 0 && (
+                <p className="col-span-full py-6 text-center text-sm text-muted-foreground">
+                    No times left on this day. Pick another date.
+                </p>
+            )}
+            {timeSlots.map((time, i) => {
+                const selected = isSelected(time);
+
+                return (
+                    <button
+                        key={i}
+                        onClick={() => onTimeClick(time)}
+                        disabled={readOnly}
+                        className={cn(
+                            "w-full py-2.5 px-2 md:py-3 md:px-4 rounded-lg border text-sm md:text-base transition-all flex items-center justify-center md:justify-between",
+                            selected
+                                ? "bg-primary text-primary-foreground border-primary shadow-md md:scale-[1.02]"
+                                : "bg-white border-border hover:border-primary hover:shadow-xs md:hover:scale-[1.01]"
+                        )}
+                    >
+                        <span className="font-medium">{format(time, "h:mm a")}</span>
+                        {selected && <span className="hidden md:inline text-xs">✓</span>}
+                    </button>
+                );
+            })}
+        </div>
+    );
+}
+
 export const TimeSlotPicker = ({
     selectedSlots = [],
     onChange,
@@ -37,34 +177,6 @@ export const TimeSlotPicker = ({
             setHasAutoFocused(true);
         }
     }, [selectedSlots, hasAutoFocused]);
-
-    const daysInMonth = eachDayOfInterval({
-        start: startOfMonth(currentMonth),
-        end: endOfMonth(currentMonth)
-    });
-
-    const firstDayOfMonth = startOfMonth(currentMonth);
-    const paddingDays = firstDayOfMonth.getDay();
-
-    const generateTimeSlots = (date) => {
-        const slots = [];
-        const start = setMinutes(setHours(date, 8), 0);
-        const end = setMinutes(setHours(date, 18), 0);
-        const now = new Date();
-
-        let currentTime = start;
-        while (isBefore(currentTime, end)) {
-            if (isSameDay(date, now)) {
-                if (currentTime > now) {
-                    slots.push(currentTime);
-                }
-            } else {
-                slots.push(currentTime);
-            }
-            currentTime = addMinutes(currentTime, 30);
-        }
-        return slots;
-    };
 
     const timeSlots = generateTimeSlots(selectedDate);
 
@@ -96,89 +208,23 @@ export const TimeSlotPicker = ({
         onChange(newSlots, duration);
     };
 
+    const handleDurationChange = (val) => {
+        setDuration(val);
+        onChange(selectedSlots, val);
+    };
+
     return (
         <div className="w-full max-w-4xl mx-auto rounded-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2 border border-slate-200/70 bg-white shadow-[0_1px_2px_rgb(15_23_42/0.04),0_12px_32px_-12px_rgb(30_58_138/0.15)]">
             <Card className="rounded-none border-0 border-b md:border-b-0 md:border-r shadow-none bg-white backdrop-blur-none">
                 <CardHeader className="space-y-6">
-                    {!readOnly && (
-                        <div className="space-y-3">
-                            <Label className="flex items-center gap-2 font-semibold text-lg">
-                                <Clock className="w-5 h-5 text-primary" />
-                                Duration: <span className="text-primary font-bold">{duration} mins</span>
-                            </Label>
-                            <input
-                                type="range"
-                                min="30"
-                                max="240"
-                                step="30"
-                                value={duration}
-                                onChange={(e) => {
-                                    const val = parseInt(e.target.value) || 30;
-                                    setDuration(val);
-                                    onChange(selectedSlots, val);
-                                }}
-                                className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
-                            />
-                            <div className="flex justify-between text-xs text-muted-foreground">
-                                <span>30m</span>
-                                <span>4h</span>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h3 className="font-semibold text-lg flex items-center gap-2">
-                                <Calendar className="w-5 h-5 text-primary" />
-                                {format(currentMonth, "MMMM yyyy")}
-                            </h3>
-                            <div className="flex gap-1">
-                                <Button variant="ghost" size="icon" onClick={() => setCurrentMonth(prev => addDays(startOfMonth(prev), -1))}>
-                                    <ChevronLeft className="w-4 h-4" />
-                                </Button>
-                                <Button variant="ghost" size="icon" onClick={() => setCurrentMonth(prev => addDays(endOfMonth(prev), 1))}>
-                                    <ChevronRight className="w-4 h-4" />
-                                </Button>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-7 gap-1 text-center text-sm">
-                            {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map(d => (
-                                <div key={d} className="text-muted-foreground py-1 font-medium">{d}</div>
-                            ))}
-                            {Array.from({ length: paddingDays }).map((_, i) => (
-                                <div key={`padding-${i}`} className="w-10 h-10 sm:w-9 sm:h-9" />
-                            ))}
-                            {daysInMonth.map((day, i) => {
-                                const isSelectedDate = isSameDay(day, selectedDate);
-                                const isToday = isSameDay(day, new Date());
-                                const hasSlots = hasTimeslotOnDate(day);
-                                const isPastDate = isBefore(startOfDay(day), startOfDay(new Date()));
-                                return (
-                                    <button
-                                        key={i}
-                                        onClick={() => !isPastDate && setSelectedDate(day)}
-                                        disabled={isPastDate}
-                                        className={cn(
-                                            "w-10 h-10 sm:w-9 sm:h-9 rounded-full flex items-center justify-center mx-auto transition-all relative text-sm",
-                                            isPastDate
-                                                ? "text-muted-foreground/30 cursor-not-allowed"
-                                                : isSelectedDate
-                                                    ? "bg-primary text-primary-foreground font-bold shadow-xs"
-                                                    : isToday
-                                                        ? "bg-primary/10 text-primary font-semibold border border-primary"
-                                                        : "hover:bg-accent text-foreground"
-                                        )}
-                                    >
-                                        {format(day, "d")}
-                                        {hasSlots && !isSelectedDate && !isPastDate && (
-                                            <div className="absolute bottom-0.5 w-1 h-1 bg-primary rounded-full" />
-                                        )}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
+                    {!readOnly && <DurationSlider duration={duration} onChange={handleDurationChange} />}
+                    <MonthCalendar
+                        currentMonth={currentMonth}
+                        setCurrentMonth={setCurrentMonth}
+                        selectedDate={selectedDate}
+                        setSelectedDate={setSelectedDate}
+                        hasTimeslotOnDate={hasTimeslotOnDate}
+                    />
                 </CardHeader>
             </Card>
 
@@ -186,36 +232,9 @@ export const TimeSlotPicker = ({
                 <CardHeader className="pb-3">
                     <CardTitle className="text-base">Choose start time ({duration} min duration)</CardTitle>
                     <p className="text-sm text-muted-foreground">{format(selectedDate, "EEEE, MMMM d")}</p>
-
                 </CardHeader>
                 <CardContent className="flex flex-col">
-                    <div className="grid grid-cols-3 gap-2 md:grid-cols-1 md:overflow-y-auto md:max-h-[450px] md:px-2 custom-scrollbar">
-                        {timeSlots.length === 0 && (
-                            <p className="col-span-full py-6 text-center text-sm text-muted-foreground">
-                                No times left on this day. Pick another date.
-                            </p>
-                        )}
-                        {timeSlots.map((time, i) => {
-                            const selected = isSelected(time);
-
-                            return (
-                                <button
-                                    key={i}
-                                    onClick={() => handleTimeClick(time)}
-                                    disabled={readOnly}
-                                    className={cn(
-                                        "w-full py-2.5 px-2 md:py-3 md:px-4 rounded-lg border text-sm md:text-base transition-all flex items-center justify-center md:justify-between",
-                                        selected
-                                            ? "bg-primary text-primary-foreground border-primary shadow-md md:scale-[1.02]"
-                                            : "bg-white border-border hover:border-primary hover:shadow-xs md:hover:scale-[1.01]"
-                                    )}
-                                >
-                                    <span className="font-medium">{format(time, "h:mm a")}</span>
-                                    {selected && <span className="hidden md:inline text-xs">✓</span>}
-                                </button>
-                            );
-                        })}
-                    </div>
+                    <TimeSlotList timeSlots={timeSlots} isSelected={isSelected} readOnly={readOnly} onTimeClick={handleTimeClick} />
                 </CardContent>
             </Card>
         </div>
