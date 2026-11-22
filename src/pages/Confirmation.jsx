@@ -153,7 +153,7 @@ export default function Confirmation({ eventData }) {
                         </Button>
                     </div>
 
-                    <Button variant="outline" onClick={() => window.location.href = '/'} className="w-full bg-gray-50 hover:bg-gray-100">
+                    <Button variant="outline" onClick={() => navigate('/')} className="w-full bg-gray-50 hover:bg-gray-100">
                         <CalendarPlus className="w-4 h-4 mr-2" />
                         Create another Event
                     </Button>

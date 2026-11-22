@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { useEvent } from "@/context/EventContext";
-import { createEvent, getEvent, updateEventStatus, addProposal, updateEventDetails } from "@/lib/db";
+import { createEvent, getEvent, confirmEvent, confirmerRole, addProposal, closeEvent, updateEventDetails } from "@/lib/db";
 import { EventForm } from "@/components/EventForm";
 import { TimeSlotPicker } from "@/components/TimeSlotPicker";
 import { NotifyButton } from "@/components/NotifyButton";
@@ -11,7 +11,7 @@ import { canNativeShare, nativeShare, copyText } from "@/lib/share";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { Loader2, Share2, Check, Calendar, Link as LinkIcon, MapPin, Clock, Pencil, ChevronRight, Mail, AlignLeft } from "lucide-react";
+import { Loader2, Share2, Check, Calendar, Link as LinkIcon, MapPin, Pencil, ChevronRight, Mail, AlignLeft } from "lucide-react";
 import { format, addMinutes } from "date-fns";
 import Confirmation from "./Confirmation";
 
@@ -20,6 +20,7 @@ const STICKY_ACTIONS = "sticky bottom-0 z-10 -mx-4 -mb-[calc(env(safe-area-inset
 export default function Home() {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const eventId = searchParams.get("eventId");
     const urlMode = searchParams.get("mode");
     const { state, dispatch } = useEvent();
@@ -67,17 +68,18 @@ export default function Home() {
                     return;
                 }
                 const email = shared.match(/[\w.%+-]+@[\w.-]+\.[a-z]{2,}/i)?.[0];
-                dispatch({
-                    type: "UPDATE_EVENT_DATA",
-                    payload: { guestEmail: email || "", description: (email ? shared.replace(email, "") : shared).trim() },
-                });
-                setPrefillKey((k) => k + 1);
-                navigate("/", { replace: true });
+                const prefill = { guestEmail: email || "", description: (email ? shared.replace(email, "") : shared).trim() };
+                navigate("/", { replace: true, state: { prefill } });
+                return;
             }
-            dispatch({ type: "SET_MODE", payload: "create" });
+            dispatch({ type: "RESET" });
+            if (location.state?.prefill) {
+                dispatch({ type: "UPDATE_EVENT_DATA", payload: location.state.prefill });
+            }
+            setPrefillKey((k) => k + 1);
             setLoading(false);
         }
-    }, [eventId, urlMode, dispatch]);
+    }, [eventId, urlMode, location.key, dispatch]);
 
     const handleCreateEvent = async (formData) => {
         dispatch({ type: "UPDATE_EVENT_DATA", payload: formData });
@@ -217,7 +219,8 @@ export default function Home() {
         }
 
         const isNegotiating = state.eventData.status === "negotiating";
-        const slotsToShow = state.selectedSlots || [];
+        const isClosed = state.eventData.status === "closed";
+        const slotsToShow = isClosed ? [] : state.selectedSlots || [];
 
         return (
             <div className="w-full max-w-3xl mx-auto space-y-6">
@@ -288,6 +291,14 @@ export default function Home() {
                     </div>
                 )}
 
+                {isClosed && (
+                    <div className="bg-gray-50 border-l-4 border-gray-400 p-4">
+                        <p className="text-sm text-gray-700">
+                            The host closed this invite because none of the proposed times worked.
+                        </p>
+                    </div>
+                )}
+
                 <div className="flex flex-col">
                     <h3 className="font-semibold text-gray-900 mb-4">
                         {isNegotiating ? "Select a Time" : "Select a Time"}
@@ -326,9 +337,15 @@ export default function Home() {
                             <Button
                                 variant="outline"
                                 className="w-full bg-gray-50 hover:bg-gray-100"
-                                onClick={() => {
-                                    if (confirm("This will start a new invite. Proceed?")) {
+                                onClick={async () => {
+                                    if (!confirm("This will close this invite and start a new one. Proceed?")) return;
+                                    try {
+                                        await closeEvent(state.eventData.id);
+                                        saveMyEvent({ id: state.eventData.id, status: "closed" }, "host");
                                         navigate("/");
+                                    } catch (e) {
+                                        console.error(e);
+                                        alert(`Error: ${e.message}`);
                                     }
                                 }}
                             >
@@ -337,7 +354,7 @@ export default function Home() {
                         </div>
                     )}
 
-                    {!isNegotiating && (
+                    {!isNegotiating && !isClosed && (
                         <div className="pt-4 space-y-2">
                             <p className="text-sm text-muted-foreground text-center">
                                 None of the times work?
@@ -360,12 +377,8 @@ export default function Home() {
 
     if (state.mode === "confirm_booking") {
         const slot = state.selectedSlots[0];
-        const isNegotiating = state.eventData.status === "negotiating";
-        const hostEmail = state.eventData.hostEmail;
-
-
-        const confirmingEmail = isNegotiating ? hostEmail : (state.eventData.guestEmail || "");
-
+        const isHostConfirming = confirmerRole(state.eventData) === "host";
+        const confirmingEmail = (isHostConfirming ? state.eventData.hostEmail : state.eventData.guestEmail) || "";
 
         return (
             <Card className="w-full max-w-3xl mx-auto">
@@ -393,7 +406,7 @@ export default function Home() {
                             title="Please enter a valid email address"
                             value={confirmingEmail || ""}
                             onChange={(e) => {
-                                if (isNegotiating) {
+                                if (isHostConfirming) {
                                     dispatch({ type: "UPDATE_EVENT_DATA", payload: { hostEmail: e.target.value } });
                                 } else {
                                     dispatch({ type: "UPDATE_EVENT_DATA", payload: { guestEmail: e.target.value } });
@@ -410,14 +423,10 @@ export default function Home() {
                             className="w-full"
                             disabled={!confirmingEmail}
                             onClick={async () => {
-
-
-
                                 setLoading(true);
                                 try {
-                                    await updateEventStatus(state.eventData.id, "confirmed", slot, confirmingEmail);
-
-                                    window.location.href = `/?eventId=${state.eventData.id}`;
+                                    await confirmEvent(state.eventData.id, slot, confirmingEmail);
+                                    navigate(`/?eventId=${state.eventData.id}`, { replace: true });
                                 } catch (e) {
                                     console.error(e);
                                     alert(`Error: ${e.message}`);
@@ -502,7 +511,7 @@ export default function Home() {
                                 dispatch({ type: "SET_MODE", payload: "proposal_sent" });
                             } catch (e) {
                                 console.error(e);
-                                alert("Failed to send proposal.");
+                                alert(`Error: ${e.message}`);
                             } finally {
                                 setLoading(false);
                             }
@@ -559,36 +568,7 @@ export default function Home() {
 
                     <NotifyButton eventId={state.eventData.id} role="guest" label="Notify me when the host confirms" />
 
-                    <Button className="w-full" variant={canNativeShare() ? "outline" : "default"} onClick={() => window.location.reload()}>
-                        Back to Event
-                    </Button>
-                </CardContent>
-            </Card>
-        );
-    }
-
-    if (state.mode === "waiting_response") {
-        const waitingFor = state.eventData.status === "negotiating" ? "host" : "guest";
-
-        return (
-            <Card className="w-full max-w-3xl mx-auto text-center">
-                <CardHeader>
-                    <div className="mx-auto w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mb-4">
-                        <Clock className="w-6 h-6 text-yellow-600" />
-                    </div>
-                    <CardTitle>Waiting for Response</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <p className="text-gray-600">
-                        The {waitingFor} has not responded yet. You'll be notified when they confirm or propose new times.
-                    </p>
-                    <Button
-                        className="w-full"
-                        onClick={() => {
-                            dispatch({ type: "SET_SLOTS", payload: state.originalProposedSlots });
-                            dispatch({ type: "SET_MODE", payload: "view" });
-                        }}
-                    >
+                    <Button className="w-full" variant={canNativeShare() ? "outline" : "default"} onClick={() => navigate(`/?eventId=${state.eventData.id}`, { replace: true })}>
                         Back to Event
                     </Button>
                 </CardContent>

@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/Card";
 import { Badge } from "./ui/Badge";
 import { getMyEvents } from "@/lib/myEvents";
 
-const STATUS_LABEL = { pending: "Pending", negotiating: "New times proposed", confirmed: "Confirmed" };
+const STATUS_LABEL = { pending: "Pending", negotiating: "New times proposed", confirmed: "Confirmed", closed: "Closed" };
 
 export const MyEventsList = () => {
     const navigate = useNavigate();

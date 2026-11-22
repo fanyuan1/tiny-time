@@ -56,56 +56,59 @@ export const getEvent = async (eventId) => {
     }
 };
 
-export const updateEventStatus = async (eventId, status, confirmedSlot = null, guestEmail = null) => {
-    try {
-        const { db, doc, getDoc, updateDoc } = await firestore();
-        const eventRef = doc(db, "events", eventId);
-        const updateData = {
-            status: status,
-            confirmedSlot: confirmedSlot,
-        };
-        if (guestEmail) {
-            updateData.guestEmail = guestEmail;
-        }
-        await updateDoc(eventRef, updateData);
+const sameEmail = (a, b) => (a || "").trim().toLowerCase() === (b || "").trim().toLowerCase();
 
-        if (status === 'confirmed') {
-            const eventDoc = await getDoc(eventRef);
-            const event = { id: eventId, ...eventDoc.data() };
-            await sendConfirmationEmails(event);
-        }
-    } catch (e) {
-        console.error("Error updating status: ", e);
-        throw e;
-    }
+const readEvent = async (eventId) => {
+    const { db, doc, getDoc, updateDoc } = await firestore();
+    const eventRef = doc(db, "events", eventId);
+    const snapshot = await getDoc(eventRef);
+    if (!snapshot.exists()) throw new Error("Event not found.");
+    return { eventRef, event: { id: eventId, ...snapshot.data() }, getDoc, updateDoc };
 };
 
-export const addProposal = async (eventId, proposedSlots, proposerEmail, duration) => {
-    try {
-        const { db, doc, getDoc, updateDoc } = await firestore();
-        const eventRef = doc(db, "events", eventId);
-        const updateData = {
-            proposedSlots: proposedSlots,
-            status: "negotiating",
-            updatedAt: new Date().toISOString()
-        };
+export const confirmerRole = (event) => (event.status === "negotiating" ? "host" : "guest");
 
-        if (duration) {
-            updateData.duration = duration;
-        }
-
-        updateData.guestEmail = proposerEmail;
-
-        await updateDoc(eventRef, updateData);
-
-        const eventDoc = await getDoc(eventRef);
-        const event = { id: eventId, ...eventDoc.data() };
-
-        await sendProposalNotificationEmail(event);
-    } catch (e) {
-        console.error("Error adding proposal: ", e);
-        throw e;
+export const confirmEvent = async (eventId, confirmedSlot, confirmerEmail) => {
+    const { eventRef, event, getDoc, updateDoc } = await readEvent(eventId);
+    if (event.status === "confirmed" || event.status === "closed") {
+        throw new Error("This event can no longer be confirmed.");
     }
+    const role = confirmerRole(event);
+    const proposerEmail = role === "host" ? event.guestEmail : event.hostEmail;
+    if (sameEmail(confirmerEmail, proposerEmail)) {
+        throw new Error("You proposed these times. The other parent must confirm them.");
+    }
+    await updateDoc(eventRef, {
+        status: "confirmed",
+        confirmedSlot,
+        [role === "host" ? "hostEmail" : "guestEmail"]: confirmerEmail.trim(),
+    });
+    const confirmed = await getDoc(eventRef);
+    await sendConfirmationEmails({ id: eventId, ...confirmed.data() });
+};
+
+export const addProposal = async (eventId, proposedSlots, guestEmail, duration) => {
+    const { eventRef, event, getDoc, updateDoc } = await readEvent(eventId);
+    if (event.status !== "pending") {
+        throw new Error("New times can only be proposed once, before anyone confirms.");
+    }
+    if (sameEmail(guestEmail, event.hostEmail)) {
+        throw new Error("The host cannot propose new times. Use the guest's email.");
+    }
+    await updateDoc(eventRef, {
+        proposedSlots,
+        status: "negotiating",
+        guestEmail: guestEmail.trim(),
+        updatedAt: new Date().toISOString(),
+        ...(duration && { duration }),
+    });
+    const proposed = await getDoc(eventRef);
+    await sendProposalNotificationEmail({ id: eventId, ...proposed.data() });
+};
+
+export const closeEvent = async (eventId) => {
+    const { eventRef, updateDoc } = await readEvent(eventId);
+    await updateDoc(eventRef, { status: "closed", updatedAt: new Date().toISOString() });
 };
 
 export const updateEventDetails = async (eventId, updates) => {
