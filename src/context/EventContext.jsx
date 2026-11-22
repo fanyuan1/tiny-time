@@ -20,6 +20,8 @@ const initialState = {
 
 const eventReducer = (state, action) => {
     switch (action.type) {
+        case "RESET":
+            return initialState;
         case "SET_MODE":
             return { ...state, mode: action.payload };
         case "UPDATE_EVENT_DATA":

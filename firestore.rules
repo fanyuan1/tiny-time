@@ -17,9 +17,12 @@ service cloud.firestore {
           'status', 'confirmedSlot', 'proposedSlots', 'updatedAt',
           'hostPushTokens', 'guestPushTokens'
         ])
-        // A confirmed time can't be changed (matches updateEventDetails in src/lib/db.js).
-        && (resource.data.status != 'confirmed'
-          || !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'confirmedSlot', 'proposedSlots']));
+        // A confirmed or closed event's time can't be changed (matches src/lib/db.js).
+        && (!(resource.data.status in ['confirmed', 'closed'])
+          || !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'confirmedSlot', 'proposedSlots']))
+        // Whoever proposed the times can't confirm them, so host and guest must differ.
+        && (request.resource.data.status != 'confirmed' || resource.data.status == 'confirmed'
+          || request.resource.data.guestEmail.lower() != request.resource.data.hostEmail.lower());
     }
   }
 }
