@@ -228,27 +228,17 @@ export default function Home() {
                     <CardHeader>
                         <div className="flex items-center justify-between">
                             <div className="flex-1">
-                                {state.isEditingEvent ? (
-                                    <Input
-                                        value={state.eventData.title}
-                                        onChange={(e) => dispatch({ type: "UPDATE_EVENT_DATA", payload: { title: e.target.value } })}
-                                        className="font-semibold text-xl mb-2"
-                                    />
-                                ) : (
-                                    <CardTitle>{state.eventData.title}</CardTitle>
-                                )}
+                                <CardTitle>{state.eventData.title}</CardTitle>
                             </div>
-                            {!state.isEditingEvent && (
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                        dispatch({ type: "SET_MODE", payload: "edit_event" });
-                                    }}
-                                >
-                                    <Pencil className="w-4 h-4" />
-                                </Button>
-                            )}
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                    dispatch({ type: "SET_MODE", payload: "edit_event" });
+                                }}
+                            >
+                                <Pencil className="w-4 h-4" />
+                            </Button>
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-3">
