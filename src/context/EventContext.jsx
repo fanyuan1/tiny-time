@@ -15,7 +15,6 @@ const initialState = {
     },
     selectedSlots: [],
     originalProposedSlots: [],
-    isEditingEvent: false,
 };
 
 const eventReducer = (state, action) => {
@@ -44,8 +43,6 @@ const eventReducer = (state, action) => {
                 ...loadedData,
                 originalProposedSlots: loadedData.selectedSlots || []
             };
-        case "SET_EDITING_EVENT":
-            return { ...state, isEditingEvent: action.payload };
         default:
             return state;
     }
